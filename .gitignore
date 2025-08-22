@@ -1,0 +1,10 @@
+*.import
+.import/
+*.godot
+*.godot.import
+*.godot.*
+*.import
+*.os
+*.dylib
+*.so
+*.dll

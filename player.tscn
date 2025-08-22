@@ -1,0 +1,70 @@
+[gd_scene load_steps=8 format=3 uid="uid://gnaxaeefsf1i"]
+
+[ext_resource type="Script" uid="uid://b5ahx1u0rsq3l" path="res://player.gd" id="1_onrkg"]
+[ext_resource type="Material" uid="uid://skssbdl4uo08" path="res://materials/playermat.tres" id="2_i3pqv"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_5ymgl"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_o40eq"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_hxhv8"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kdsk4"]
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_onrkg"]
+
+[node name="Player" type="CharacterBody3D" groups=["enemy"]]
+script = ExtResource("1_onrkg")
+
+[node name="BodyMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.154162, 0.599886, 0)
+material_override = ExtResource("2_i3pqv")
+mesh = SubResource("CapsuleMesh_5ymgl")
+
+[node name="eye1" type="MeshInstance3D" parent="BodyMesh"]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, -0.181397, 0.537166, 0.480068)
+mesh = SubResource("SphereMesh_o40eq")
+
+[node name="eye2" type="MeshInstance3D" parent="BodyMesh"]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0.16936, 0.539047, 0.5)
+mesh = SubResource("SphereMesh_hxhv8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(0.52, 0, 0, 0, 0.52, 0, 0, 0, 0.52, 0.154162, 0.598389, 0)
+shape = SubResource("CapsuleShape3D_kdsk4")
+
+[node name="CameraOrigin" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.752012, -0.25596)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraOrigin"]
+transform = Transform3D(-0.999523, -1.45519e-09, -0.0308875, 0.000410233, 0.999912, -0.0132752, 0.0308848, -0.0132816, -0.999435, -0.354002, 0.462555, 0)
+spring_length = 2.5
+margin = 0.5
+
+[node name="Camera3D" type="Camera3D" parent="CameraOrigin/SpringArm3D"]
+transform = Transform3D(1, 0, 0, 0, 0.99824, 0.0593064, 0, -0.0593064, 0.99824, 0.0116494, 0.717158, 1.30445)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Crosshair" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Crosshair"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="HandSocket" type="Node3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -0.288587, 0.22086, 0.0999999)
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_onrkg")
+metadata/global_position = Vector3(0, 0, 0)
+metadata/global_rotation = Vector3(0, 0, 0)
