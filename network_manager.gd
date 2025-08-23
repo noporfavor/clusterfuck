@@ -45,10 +45,6 @@ func host_game(port := 8888, max_clients := 32) -> void:
 	spawn_player(my_id)
 func join_game(ip:= "127.0.0.1", port := 8888) -> void:
 	var main = get_tree().current_scene
-	if main:
-		for node in main.get_children():
-			node.queue_free()
-			await get_tree().process_frame
 	if multiplayer.multiplayer_peer:
 		multiplayer.multiplayer_peer = null
 	peer = ENetMultiplayerPeer.new()
@@ -97,7 +93,6 @@ func _on_peer_connected(id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	print("Server: peer connected", id)
-	await get_tree().create_timer(0.3).timeout
 	spawn_player(id)
 	var main := _get_main()
 	if main:
@@ -148,17 +143,15 @@ func spawn_existing_player(data: Dictionary):
 	if not spawner:
 		push_error("MultiplayerSpawner not found on client")
 		return
-	if not multiplayer.has_multiplayer_peer():
-		push_error("No multiplayer peer on client")
-		return
-	if not spawner.is_inside_tree():
-		push_error("MultiplayerSpawner not in scene tree")
-		return
 	if spawner.get_node_or_null("player_" + str(data.id)):
 		print("Client: player_%d already exists, skipping spawn" % data.id)
+		var player = spawner.get_node("player_" + str(data.id))
+		player.position = data.position
 		return
-	await get_tree().create_timer(0.2).timeout
-	spawner.spawn(data)
+	var parent = spawner.get_node(spawner.get_spawn_path())
+	var node = spawner.get_spawn_function().call(data)
+	if node:
+		parent.add_child(node)
 	print("Client spawning existing player_%d at %s on peer %d" % [data.id, data.position, multiplayer.get_unique_id()])
 func _get_main() -> Node:
 	var main = get_tree().current_scene
