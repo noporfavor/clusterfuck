@@ -12,6 +12,9 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kdsk4"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_onrkg"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
 
 [node name="Player" type="CharacterBody3D" groups=["enemy"]]
 script = ExtResource("1_onrkg")
@@ -65,7 +68,7 @@ offset_bottom = 23.0
 transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -0.288587, 0.22086, 0.0999999)
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+process_mode = 3
 replication_config = SubResource("SceneReplicationConfig_onrkg")
-public_visibility = false
 metadata/global_position = Vector3(0, 0, 0)
 metadata/global_rotation = Vector3(0, 0, 0)

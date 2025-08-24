@@ -148,10 +148,10 @@ func spawn_existing_player(data: Dictionary):
 		var player = spawner.get_node("player_" + str(data.id))
 		player.position = data.position
 		return
-	var parent = spawner.get_node(spawner.get_spawn_path())
-	var node = spawner.get_spawn_function().call(data)
-	if node:
-		parent.add_child(node)
+	#var parent = spawner.get_node(spawner.get_spawn_path())
+	#var node = spawner.get_spawn_function().call(data)
+	#if node:
+		#parent.add_child(node)
 	print("Client spawning existing player_%d at %s on peer %d" % [data.id, data.position, multiplayer.get_unique_id()])
 func _get_main() -> Node:
 	var main = get_tree().current_scene
