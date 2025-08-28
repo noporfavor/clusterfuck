@@ -27,7 +27,7 @@ func shoot():
 		bullet.launch(shoot_direction * shoot_force)
 
 func _on_area_3d_body_entered(body: Node3D) -> void:
-	if body.name == "player_1":
+	if body.is_in_group("player"):
 		player_near = true
 		player_ref = body
 		print("Player near gun")

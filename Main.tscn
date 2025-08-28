@@ -48,7 +48,7 @@ transform = Transform3D(-1.16484e-07, 0, 0.127147, 0, 1.46171, 0, -2.66485, 0, -
 size = Vector3(7.6, 1, 2.7)
 
 [node name="Gun" parent="." instance=ExtResource("3_3dxm6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.85288, 0.0999999, 4.67632)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.85288, 0.0999999, 3.97632)
 
 [node name="MainMenu" parent="." instance=ExtResource("4_lgr22")]
 
