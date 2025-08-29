@@ -33,7 +33,7 @@ func explode():
 		return
 	exploded = true
 	var shape := SphereShape3D.new()
-	shape.radius = explosion_radius	
+	shape.radius = explosion_radius
 	var _space_state = get_world_3d().direct_space_state
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = shape
