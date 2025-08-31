@@ -22,10 +22,12 @@ func _toggle_menu():
 func _show_menu(visible: bool):
 	menu_visible = visible
 	menu_ui.visible = visible
-	if visible:
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	else:
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if visible else Input.MOUSE_MODE_CAPTURED
+	_update_player_input(!visible)
+func _update_player_input(enabled: bool) -> void:
+	var local_player := get_node_or_null("player_%d" % multiplayer.get_unique_id())
+	if local_player and "input_enabled" in local_player:
+		local_player.input_enabled = enabled
 func _spawn_player(data: Dictionary) -> Node:
 	var id = data.id
 	var pos = data.position
