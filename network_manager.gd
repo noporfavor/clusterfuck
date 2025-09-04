@@ -171,4 +171,4 @@ func _get_main_scene() -> Node:
 	return main
 
 func _get_spawn_point(_main: Node) -> Vector3:
-	return Vector3(randf_range(-5, 5), 5, randf_range(-5, 5))
+	return Vector3(randf_range(-3, 3), 3, randf_range(-3, 3))

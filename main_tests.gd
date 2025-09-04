@@ -36,13 +36,13 @@ func _spawn_player(data: Dictionary) -> Node:
 		var existing = get_node("player_" + str(id))
 		print("Player %d already exists at %s" % [id, existing.position])
 		return existing
-	var p = preload("res://player.tscn").instantiate()
-	p.name = "player_" + str(id)
-	p.position = pos
-	p.set_multiplayer_authority(id)
-	if "input_enabled" in p:
-		p.input_enabled = (id == multiplayer.get_unique_id())
-	return p
+	var player = preload("res://player.tscn").instantiate()
+	player.name = "player_" + str(id)
+	player.position = pos
+	player.set_multiplayer_authority(id)
+	if "input_enabled" in player:
+		player.input_enabled = (id == multiplayer.get_unique_id())
+	return player
 func _on_spawner_spawned(node: Node):
 	print("Spawner created node %s on peer %d" % [node.name, multiplayer.get_unique_id()])
 # --- CLIENT ---

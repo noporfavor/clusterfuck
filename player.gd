@@ -22,6 +22,14 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 func _ready():
 	_setup_camera()
 	_setup_crosshair()
+	if multiplayer.is_server():
+		for gun in get_tree().get_nodes_in_group("gun"):
+			if gun.holder_id != 0:
+				var player = gun.get_player_node(gun.holder_id)
+				if player:
+					gun.reparent(player.get_node_or_null($HandSocket))
+					gun.transform = Transform3D.IDENTITY
+					gun.camera = player.get_node_or_null($CameraOrigin/SpringArm3D/Camera3D)
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority()
 	if not input_enabled:
@@ -47,7 +55,7 @@ func _physics_process(_delta):
 	_handle_movement(_delta)
 	_handle_zoom(_delta)
 	_handle_jump(_delta)
-	_handle_interaction()
+	#_handle_interaction()
 	_handle_shooting()
 	move_and_slide()
 func _apply_gravity(_delta) -> void:
@@ -92,25 +100,39 @@ func _handle_jump(_delta) -> void:
 		velocity.y = jump_velocity
 		jump_buffer_timer = 0
 		coyote_timer = 0
-func _handle_interaction() -> void:
-	if not input_enabled or not Input.is_action_just_pressed("interact"):
-		return
-	var ray_result := _cast_interaction_ray()
-	if ray_result and ray_result.collider.is_in_group("gun"):
-		equip_gun(ray_result.collider)
 func _cast_interaction_ray() -> Dictionary:
 	var ray_origin := camera.global_transform.origin
 	var ray_target = ray_origin - camera.global_transform.basis.z * 2.0
 	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_target)
 	query.exclude = [self, camera]
 	return get_world_3d().direct_space_state.intersect_ray(query)
-func _handle_shooting() -> void:
-	if input_enabled and Input.is_action_just_pressed("shoot") and current_gun:
-		current_gun.shoot()
+func _handle_shooting() -> void: # if input_enabled and was there b4
+	if Input.is_action_just_pressed("shoot") and current_gun:
+		if multiplayer.is_server():
+			current_gun.shoot()
+		else: current_gun.request_shoot.rpc()
+#func _handle_interaction() -> void:
+	#if not input_enabled or not Input.is_action_just_pressed("interact"):
+	# 
+	# FUNCION PARA DROPEAR ARMA EN MANO / INTERACCION CON WEAS, ETC
+	#
 func equip_gun(gun):
 	if not input_enabled:
 		return
-	current_gun = gun
-	gun.reparent($HandSocket) # attach to player
-	gun.transform = Transform3D.IDENTITY
-	gun.camera = $CameraOrigin/SpringArm3D/Camera3D
+	if multiplayer.is_server():
+		current_gun = gun
+		gun.rpc("attach_to_player", multiplayer.get_unique_id())
+	else:
+		var gun_path = gun.get_path()
+		request_pickup.rpc(gun_path)
+
+@rpc("any_peer", "reliable")
+func request_pickup(gun_path: NodePath):
+	if multiplayer.is_server():
+		var gun = get_node_or_null(gun_path)
+		if gun and gun_avalaible(gun):
+			gun.rpc("attach_to_player", multiplayer.get_remote_sender_id())
+func gun_avalaible(gun: Node) -> bool:
+	if not gun or not gun.is_inside_tree():
+		return false
+	return gun.holder_id == 0 and is_inside_tree()
