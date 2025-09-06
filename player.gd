@@ -106,33 +106,21 @@ func _cast_interaction_ray() -> Dictionary:
 	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_target)
 	query.exclude = [self, camera]
 	return get_world_3d().direct_space_state.intersect_ray(query)
-func _handle_shooting() -> void: # if input_enabled and was there b4
-	if Input.is_action_just_pressed("shoot") and current_gun:
+func _handle_shooting() -> void:
+	if Input.is_action_just_pressed("shoot") and current_gun and current_gun.holder_id == multiplayer.get_unique_id():
+		print("Shooting attempt: player_id=", multiplayer.get_unique_id(), " input_enabled=", input_enabled)
 		if multiplayer.is_server():
 			current_gun.shoot()
-		else: current_gun.request_shoot.rpc()
+		else: current_gun.request_shoot.rpc_id(1)
 #func _handle_interaction() -> void:
 	#if not input_enabled or not Input.is_action_just_pressed("interact"):
 	# 
 	# FUNCION PARA DROPEAR ARMA EN MANO / INTERACCION CON WEAS, ETC
 	#
-func equip_gun(gun):
-	if not input_enabled:
+func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
+	print("Equip attempt: input_enabled=", input_enabled, " gun.holder_id=", gun.holder_id, " player_id=", player_id)
+	if gun.holder_id != 0:
+		print("Cannot equip: input disabled or gun held", gun.holder_id)
 		return
-	if multiplayer.is_server():
-		current_gun = gun
-		gun.rpc("attach_to_player", multiplayer.get_unique_id())
-	else:
-		var gun_path = gun.get_path()
-		request_pickup.rpc(gun_path)
-
-@rpc("any_peer", "reliable")
-func request_pickup(gun_path: NodePath):
-	if multiplayer.is_server():
-		var gun = get_node_or_null(gun_path)
-		if gun and gun_avalaible(gun):
-			gun.rpc("attach_to_player", multiplayer.get_remote_sender_id())
-func gun_avalaible(gun: Node) -> bool:
-	if not gun or not gun.is_inside_tree():
-		return false
-	return gun.holder_id == 0 and is_inside_tree()
+	current_gun = gun
+	gun.rpc("attach_to_player", player_id)

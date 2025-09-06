@@ -39,14 +39,7 @@ func request_shoot():
 	if multiplayer.is_server():
 		shoot()
 
-@rpc("authority", "call_local", "reliable")
-func attach_to_player(player_id: int):
-	holder_id = player_id
-	if player_id == 0:
-		return # No player, stay at spawn
-	var player = get_player_node(player_id) # to find player
-	if player:
-		call_deferred("_deferred_reparent", player)
+
 
 func _deferred_reparent(player: Node):
 	reparent(player.get_node_or_null("HandSocket"))
@@ -66,8 +59,39 @@ func get_player_node(player_id: int) -> Node:
 			return node
 	return null
 func _on_area_3d_body_entered(body: Node3D) -> void:
-	if body.is_in_group("player") and multiplayer.get_unique_id() == body.get_multiplayer_authority():
-		body.call("equip_gun", self)
+	if body.is_in_group("player") and holder_id == 0:
+		if multiplayer.is_server():
+			if body.get_multiplayer_authority() == multiplayer.get_unique_id():
+				body.call("equip_gun", self)
+		else:
+			print("Client requesting pickup for gun: ", get_path())
+			request_pickup.rpc_id(1, get_path())
+@rpc("any_peer", "reliable")
+func request_pickup(gun_path: NodePath):
+	if multiplayer.is_server():
+		print("Server received pickup request for: ", gun_path)
+		var gun = get_node_or_null(gun_path)
+		if gun and gun.holder_id == 0:
+			var player_id = multiplayer.get_remote_sender_id()
+			var player = get_player_node(player_id)
+			print("Player found: ", player, " for ID: ", player_id)
+			if player:
+				player.call("equip_gun", gun, player_id)
+		else:
+			print("Gun not available or invalid: ", gun)
 
+@rpc("authority", "call_local", "reliable")
+func attach_to_player(player_id: int):
+	print("Attaching gun to player ID: ", player_id)
+	holder_id = player_id
+	if player_id == 0:
+		print("No player, gun stays at spawn")
+		return # No player, stay at spawn
+	var player = get_player_node(player_id) # to find player
+	if player:
+		print("Reparenting gun to player: ", player)
+		call_deferred("_deferred_reparent", player)
+	else:
+		print("Player not found for ID: ", player_id)
 func _physics_process(_delta):
 	pass
