@@ -39,8 +39,6 @@ func request_shoot():
 	if multiplayer.is_server():
 		shoot()
 
-
-
 func _deferred_reparent(player: Node):
 	reparent(player.get_node_or_null("HandSocket"))
 	transform = Transform3D.IDENTITY
