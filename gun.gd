@@ -90,7 +90,8 @@ func attach_to_player(player_id: int):
 	var player = get_player_node(player_id) # to find player
 	if player:
 		print("Reparenting gun to player: ", player)
-		call_deferred("_deferred_reparent", player)
+		_deferred_reparent(player)
+		player.current_gun = self
 	else:
 		print("Player not found for ID: ", player_id)
 func _physics_process(_delta):
