@@ -51,7 +51,8 @@ func explode():
 				body.apply_central_impulse(force)
 			
 			elif body is CharacterBody3D:
-				body.velocity += force
+				body.rpc("apply_knockback", force)
+				#body.velocity += force
 	queue_free()
 
 func launch(impulse: Vector3):

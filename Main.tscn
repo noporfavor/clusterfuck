@@ -59,4 +59,5 @@ spawn_path = NodePath("..")
 [connection signal="pressed" from="MainMenu/Panel/Control/BoxContainer/StartGame" to="." method="_on_start_game_pressed"]
 [connection signal="pressed" from="MainMenu/Panel/Control/BoxContainer/HostGame" to="." method="_on_host_game_pressed"]
 
+[editable path="Gun"]
 [editable path="MainMenu"]

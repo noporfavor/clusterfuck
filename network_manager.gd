@@ -66,7 +66,6 @@ func _ensure_main_scene() -> Node:
 		main = MAIN_SCENE.instantiate()
 		get_tree().root.add_child(main)
 		while get_tree().current_scene == null or get_tree().current_scene.name != "Main":
-			print("Waiting for Main scene, current: %s" % (get_tree().current_scene.name if get_tree().current_scene else "null"))
 			await get_tree().process_frame
 	return main
 

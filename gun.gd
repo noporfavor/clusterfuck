@@ -34,6 +34,10 @@ func shoot():
 	# RPC to client to spawn bullet
 	rpc_spawn_bullet.rpc(muzzle.global_transform, shoot_direction * shoot_force)
 
+func _set_transform(player: Node):
+	transform = Transform3D.IDENTITY
+	camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
+
 @rpc("any_peer", "reliable")
 func request_shoot():
 	if multiplayer.is_server():
@@ -44,10 +48,10 @@ func _deferred_reparent(player: Node):
 	transform = Transform3D.IDENTITY
 	camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
 @rpc("any_peer", "reliable")
-func rpc_spawn_bullet(transform: Transform3D, velocity: Vector3):
+func rpc_spawn_bullet(bullet_transform: Transform3D, velocity: Vector3):
 	if not multiplayer.is_server():
 		var bullet = bullet_scene.instantiate()
-		bullet.global_transform = transform
+		bullet.global_transform = bullet_transform
 		get_tree().current_scene.add_child(bullet)
 		bullet.launch(velocity)
 
@@ -88,7 +92,8 @@ func attach_to_player(player_id: int):
 	var player = get_player_node(player_id) # to find player
 	if player:
 		print("Reparenting gun to player: ", player)
-		_deferred_reparent(player)
+		call_deferred("_deferred_reparent", player)
+		#_deferred_reparent(player)
 		player.current_gun = self
 	else:
 		print("Player not found for ID: ", player_id)

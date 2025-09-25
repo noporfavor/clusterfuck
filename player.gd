@@ -12,6 +12,7 @@ extends CharacterBody3D
 @export var zoom_speed := 10.0
 @export var coyote_time := 0.15
 @export var jump_buffer_time := 0.2
+@export var Velocity = velocity
 
 var input_enabled := true
 var current_gun: Node = null
@@ -28,8 +29,8 @@ func _ready():
 				var player = gun.get_player_node(gun.holder_id)
 				if player:
 					gun.reparent(player.get_node_or_null($HandSocket))
-					gun.transform = Transform3D.IDENTITY
-					gun.camera = player.get_node_or_null($CameraOrigin/SpringArm3D/Camera3D)
+					gun.call_deferred("_set_transform", player)
+
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority()
 	if not input_enabled:
@@ -107,11 +108,14 @@ func _cast_interaction_ray() -> Dictionary:
 	query.exclude = [self, camera]
 	return get_world_3d().direct_space_state.intersect_ray(query)
 func _handle_shooting() -> void:
-	if Input.is_action_just_pressed("shoot") and current_gun and current_gun.holder_id == multiplayer.get_unique_id():
-		print("Shooting attempt: player_id=", multiplayer.get_unique_id(), " input_enabled=", input_enabled)
+	if Input.is_action_just_pressed("shoot") and input_enabled and current_gun and current_gun.holder_id == multiplayer.get_unique_id():
 		if multiplayer.is_server():
 			current_gun.shoot()
 		else: current_gun.request_shoot.rpc_id(1)
+
+@rpc("authority", "call_local", "reliable")
+func apply_knockback(force: Vector3):
+	velocity += force
 #func _handle_interaction() -> void:
 	#if not input_enabled or not Input.is_action_just_pressed("interact"):
 	# 

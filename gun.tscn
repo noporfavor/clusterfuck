@@ -15,6 +15,12 @@ height = 0.86
 properties/0/path = NodePath(".:holder_id")
 properties/0/spawn = true
 properties/0/replication_mode = 2
+properties/1/path = NodePath(".:position")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath(".:rotation")
+properties/2/spawn = true
+properties/2/replication_mode = 1
 
 [node name="Gun" type="Node3D" groups=["gun"]]
 script = ExtResource("1_dk5gl")
