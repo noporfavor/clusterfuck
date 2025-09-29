@@ -28,13 +28,13 @@ func _ready():
 			if gun.holder_id != 0:
 				var player = gun.get_player_node(gun.holder_id)
 				if player:
-					gun.reparent(player.get_node_or_null($HandSocket))
+					gun.reparent(player.get_node_or_null("HandSocket"))
 					gun.call_deferred("_set_transform", player)
 
 func _setup_camera() -> void:
-	camera.current = is_multiplayer_authority()
-	if not input_enabled:
-		camera.current = false
+	camera.current = is_multiplayer_authority() and input_enabled
+	#if not input_enabled:
+		#camera.current = false
 func _setup_crosshair() -> void:
 	crosshair_label.text = "X"
 	crosshair_label.add_theme_color_override("font_color", Color.WHITE)
@@ -50,7 +50,7 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
-		move_and_slide()
+		#move_and_slide()
 		return
 	_apply_gravity(_delta)
 	_handle_movement(_delta)
@@ -113,9 +113,10 @@ func _handle_shooting() -> void:
 			current_gun.shoot()
 		else: current_gun.request_shoot.rpc_id(1)
 
-@rpc("authority", "call_local", "reliable")
+@rpc("any_peer", "call_local", "reliable")
 func apply_knockback(force: Vector3):
 	velocity += force
+
 #func _handle_interaction() -> void:
 	#if not input_enabled or not Input.is_action_just_pressed("interact"):
 	# 

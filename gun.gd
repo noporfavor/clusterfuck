@@ -12,7 +12,6 @@ func _ready() -> void:
 		var synchronizer = get_node_or_null("MultiplayerSynchronizer")
 		if synchronizer:
 			synchronizer.set_multiplayer_authority(multiplayer.get_unique_id())
-
 func shoot():
 	if not is_inside_tree() or not multiplayer.is_server():
 		return
@@ -26,7 +25,7 @@ func shoot():
 
 	var target_pos = result.get("position", ray_end)
 	var shoot_direction = (target_pos - muzzle.global_transform.origin).normalized()
-	
+	print("Server: Bullet spawn at muzzle.global_transform: ", muzzle.global_transform.origin)
 	var bullet = bullet_scene.instantiate()
 	bullet.global_transform = muzzle.global_transform
 	get_tree().current_scene.add_child(bullet)
@@ -47,9 +46,11 @@ func _deferred_reparent(player: Node):
 	reparent(player.get_node_or_null("HandSocket"))
 	transform = Transform3D.IDENTITY
 	camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
+	
 @rpc("any_peer", "reliable")
 func rpc_spawn_bullet(bullet_transform: Transform3D, velocity: Vector3):
 	if not multiplayer.is_server():
+		print("Client: Bullet spawn at bullet_transform: ", bullet_transform.origin, ", muzzle.global_transform: ", muzzle.global_transform.origin)
 		var bullet = bullet_scene.instantiate()
 		bullet.global_transform = bullet_transform
 		get_tree().current_scene.add_child(bullet)
@@ -93,7 +94,6 @@ func attach_to_player(player_id: int):
 	if player:
 		print("Reparenting gun to player: ", player)
 		call_deferred("_deferred_reparent", player)
-		#_deferred_reparent(player)
 		player.current_gun = self
 	else:
 		print("Player not found for ID: ", player_id)

@@ -127,7 +127,7 @@ func _on_connected_to_server():
 		while not spawner:
 			print("Client waiting for MultiplayerSpawner")
 			await get_tree().process_frame
-			spawner = main.get_node("multiplayerSpawner")
+			spawner = main.get_node("MultiplayerSpawner")
 
 func _on_connection_failed():
 	print("Connection failed")
