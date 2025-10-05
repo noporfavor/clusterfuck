@@ -49,7 +49,6 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
-		#move_and_slide()
 		return
 	_apply_gravity(_delta)
 	_handle_movement(_delta)
@@ -119,7 +118,7 @@ func apply_knockback(force: Vector3):
 #func _handle_interaction() -> void:
 	#if not input_enabled or not Input.is_action_just_pressed("interact"):
 	# 
-	# FUNCION PARA DROPEAR ARMA EN MANO / INTERACCION CON WEAS, ETC
+	# FUNCION PARA DROPEAR ARMA EN MANO? QUIZA PA MELEE? / INTERACCION CON WEAS, ETC
 	#
 func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 	print("Equip attempt: input_enabled=", input_enabled, " gun.holder_id=", gun.holder_id, " player_id=", player_id)

@@ -49,4 +49,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.394642, 0.611446, 0)
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("SceneReplicationConfig_kw0bs")
 
+[node name="Cooldown_Timer" type="Timer" parent="."]
+wait_time = 0.4
+one_shot = true
+
+[node name="Reload_Timer" type="Timer" parent="."]
+wait_time = 0.8
+
 [connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered"]

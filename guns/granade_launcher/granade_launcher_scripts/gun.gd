@@ -6,15 +6,33 @@ var camera: Camera3D
 @export var shoot_force := 35.0
 @onready var muzzle: Node3D = $Muzzle
 @export var holder_id: int = 0
+@export var max_ammo := 6
+@export var shoot_cd := 0.4
+@onready var cooldown_timer: Timer = $Cooldown_Timer
+@onready var reload_timer: Timer = $Reload_Timer
+var current_ammo: int
 
 func _ready() -> void:
 	if multiplayer.is_server():
 		var synchronizer = get_node_or_null("MultiplayerSynchronizer")
 		if synchronizer:
 			synchronizer.set_multiplayer_authority(multiplayer.get_unique_id())
+		current_ammo = max_ammo
+	reload_timer.timeout.connect(_on_reload_timer_timeout)
+	print("Granade Launcher ammo = ", current_ammo)
+
+func _process(delta: float) -> void:
+	if multiplayer.is_server() and current_ammo < max_ammo and reload_timer.is_stopped() and cooldown_timer.is_stopped():
+		reload_timer.start()
+
 func shoot():
-	if not is_inside_tree() or not multiplayer.is_server():
+	if not is_inside_tree() or not multiplayer.is_server() or current_ammo <= 0 or not cooldown_timer.is_stopped():
 		return
+	if not reload_timer.is_stopped():
+		reload_timer.stop()
+	current_ammo -= 1
+	cooldown_timer.start()
+	print("Granade Launcher ammo = ", current_ammo)
 	var camera_origin = camera.global_transform.origin
 	var ray_direction = -camera.global_transform.basis.z
 	var ray_end = camera_origin + ray_direction * 1000.0
@@ -31,6 +49,15 @@ func shoot():
 	bullet.launch(shoot_direction * shoot_force)
 	# RPC to client to spawn bullet
 	rpc_spawn_bullet.rpc(muzzle.global_transform, shoot_direction * shoot_force)
+
+func _on_reload_timer_timeout() -> void:
+	if multiplayer.is_server():
+		current_ammo += 1
+		print("Granade Launcher ammo = ", current_ammo)
+		if current_ammo >= max_ammo:
+			reload_timer.stop()
+
+
 
 func _set_transform(player: Node):
 	transform = Transform3D.IDENTITY

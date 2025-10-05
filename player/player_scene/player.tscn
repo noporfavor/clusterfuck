@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://gnaxaeefsf1i"]
 
-[ext_resource type="Script" uid="uid://b5ahx1u0rsq3l" path="res://player/player_script/player.gd" id="1_rkbax"]
-[ext_resource type="Material" uid="uid://skssbdl4uo08" path="res://materials/playermat.tres" id="2_g1dw6"]
+[ext_resource type="Script" uid="uid://b5ahx1u0rsq3l" path="res://player/player_script/player.gd" id="1_uappl"]
+[ext_resource type="Material" uid="uid://skssbdl4uo08" path="res://materials/playermat.tres" id="2_ocfq7"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_5ymgl"]
 
@@ -21,16 +21,13 @@ properties/1/replication_mode = 1
 properties/2/path = NodePath("CameraOrigin:rotation")
 properties/2/spawn = true
 properties/2/replication_mode = 1
-properties/3/path = NodePath(".:Velocity")
-properties/3/spawn = true
-properties/3/replication_mode = 2
 
 [node name="Player" type="CharacterBody3D" groups=["enemy", "player"]]
-script = ExtResource("1_rkbax")
+script = ExtResource("1_uappl")
 
 [node name="BodyMesh" type="MeshInstance3D" parent="."]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.154162, 0.599886, 0)
-material_override = ExtResource("2_g1dw6")
+material_override = ExtResource("2_ocfq7")
 mesh = SubResource("CapsuleMesh_5ymgl")
 
 [node name="eye1" type="MeshInstance3D" parent="BodyMesh"]
