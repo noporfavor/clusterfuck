@@ -24,8 +24,7 @@ func shoot():
 	var result = space_state.intersect_ray(query)
 
 	var target_pos = result.get("position", ray_end)
-	var shoot_direction = (target_pos - muzzle.global_transform.origin).normalized()
-	print("Server: Bullet spawn at muzzle.global_transform: ", muzzle.global_transform.origin)
+	var shoot_direction = (target_pos - muzzle.global_transform.origin).normalized()	
 	var bullet = bullet_scene.instantiate()
 	bullet.global_transform = muzzle.global_transform
 	get_tree().current_scene.add_child(bullet)
@@ -49,8 +48,7 @@ func _deferred_reparent(player: Node):
 	
 @rpc("any_peer", "reliable")
 func rpc_spawn_bullet(bullet_transform: Transform3D, velocity: Vector3):
-	if not multiplayer.is_server():
-		print("Client: Bullet spawn at bullet_transform: ", bullet_transform.origin, ", muzzle.global_transform: ", muzzle.global_transform.origin)
+	if not multiplayer.is_server():		
 		var bullet = bullet_scene.instantiate()
 		bullet.global_transform = bullet_transform
 		get_tree().current_scene.add_child(bullet)

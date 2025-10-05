@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bsm8o54slysi7"]
 
-[ext_resource type="Script" uid="uid://5o2milmhx06u" path="res://MainMenu.gd" id="1_06t4h"]
+[ext_resource type="Script" uid="uid://5o2milmhx06u" path="res://menu_ui/menu_ui_script/MainMenu.gd" id="1_06t4h"]
 
 [node name="MainMenu" type="CanvasLayer"]
 script = ExtResource("1_06t4h")
@@ -13,7 +13,6 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Control" type="Control" parent="Panel"]
-layout_mode = 2
 anchors_preset = 0
 anchor_right = 0.227
 anchor_bottom = 0.125

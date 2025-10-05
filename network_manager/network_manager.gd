@@ -1,7 +1,8 @@
 extends Node
 
+
 var peer: ENetMultiplayerPeer
-const MAIN_SCENE = preload("res://Main.tscn")
+const MAIN_SCENE = preload("res://main_test_scene/Main.tscn")
 const DEFAULT_PORT: int = 8888
 const DEFAULT_MAX_CLIENTS: int = 32
 const DEFAULT_IP: String = "127.0.0.1"
@@ -133,7 +134,7 @@ func _on_connection_failed():
 	print("Connection failed")
 	var main := _get_main_scene()
 	if main:
-		get_tree().change_scene_to_file("res://Main.tscn")
+		get_tree().change_scene_to_file("res://main_test_scene/Main.tscn")
 
 func _on_server_disconnect(id: int):
 	print("Disconnected from server")

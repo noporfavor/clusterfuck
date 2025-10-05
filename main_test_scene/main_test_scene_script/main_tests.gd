@@ -36,7 +36,7 @@ func _spawn_player(data: Dictionary) -> Node:
 		var existing = get_node("player_" + str(id))
 		print("Player %d already exists at %s" % [id, existing.position])
 		return existing
-	var player = preload("res://player.tscn").instantiate()
+	var player = preload("res://player/player_scene/player.tscn").instantiate()
 	player.name = "player_" + str(id)
 	player.position = pos
 	player.set_multiplayer_authority(id)

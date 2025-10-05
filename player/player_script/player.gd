@@ -33,8 +33,7 @@ func _ready():
 
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
-	#if not input_enabled:
-		#camera.current = false
+
 func _setup_crosshair() -> void:
 	crosshair_label.text = "X"
 	crosshair_label.add_theme_color_override("font_color", Color.WHITE)

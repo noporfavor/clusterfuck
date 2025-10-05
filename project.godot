@@ -12,12 +12,12 @@ config_version=5
 
 config/name="clusterfuck"
 run/main_scene="uid://bn7lkaw4ww521"
-config/features=PackedStringArray("4.4", "GL Compatibility")
+config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
-NetworkManager="*res://network_manager.gd"
+NetworkManager="*res://network_manager/network_manager.gd"
 
 [input]
 

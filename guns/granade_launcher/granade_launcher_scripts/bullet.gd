@@ -1,7 +1,7 @@
 extends RigidBody3D
 
 @export var explosion_radius := 5.0
-@export var explosion_force := 10.0
+@export var explosion_force := 20.0
 @export var explosion_delay := 1.5
 @export var max_bounces := 3
 

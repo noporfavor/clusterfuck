@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://bqcf5atpundt"]
 
-[ext_resource type="Script" uid="uid://bj378yb3611rl" path="res://bullet.gd" id="1_v7oki"]
+[ext_resource type="Script" uid="uid://bj378yb3611rl" path="res://guns/granade_launcher/granade_launcher_scripts/bullet.gd" id="1_ws5de"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_v7oki"]
 friction = 0.0
@@ -15,7 +15,7 @@ physics_material_override = SubResource("PhysicsMaterial_v7oki")
 continuous_cd = true
 contact_monitor = true
 max_contacts_reported = 8
-script = ExtResource("1_v7oki")
+script = ExtResource("1_ws5de")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(0.29, 0, 0, 0, 0.29, 0, 0, 0, 0.29, 0, 0, 0)
