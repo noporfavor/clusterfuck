@@ -3,6 +3,7 @@ extends CharacterBody3D
 @onready var pivot: Node3D = $CameraOrigin
 @onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
 @onready var hand_socket: Node3D = $HandSocket
+@onready var ammo_label: Label = $CanvasLayer/Control/AmmoLabel
 
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
@@ -30,6 +31,10 @@ func _ready():
 				if player:
 					gun.reparent(player.get_node_or_null("HandSocket"))
 					gun.call_deferred("_set_transform", player)
+	if multiplayer.get_unique_id() == get_multiplayer_authority():
+		ammo_label.text = "Ammo:  / "
+		if current_gun:
+			_connect_gun_signals(current_gun)
 
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
@@ -127,3 +132,10 @@ func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 		return
 	current_gun = gun
 	gun.rpc("attach_to_player", player_id)
+	if multiplayer.get_unique_id() == get_multiplayer_authority():
+		_connect_gun_signals(gun)
+func _connect_gun_signals(gun: Node) -> void:
+	if gun.has_signal("ammo_changed"):
+		gun.ammo_changed.connect(_on_gun_ammo_changed)
+func _on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
+	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]

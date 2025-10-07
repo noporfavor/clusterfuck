@@ -1,5 +1,7 @@
 extends Node3D
 
+signal ammo_changed(new_ammo: int, max_ammo: int)
+
 var camera: Camera3D
 
 @export var bullet_scene: PackedScene
@@ -18,8 +20,14 @@ func _ready() -> void:
 		if synchronizer:
 			synchronizer.set_multiplayer_authority(multiplayer.get_unique_id())
 		current_ammo = max_ammo
+		rpc_update_ammo.rpc(current_ammo, max_ammo)
 	reload_timer.timeout.connect(_on_reload_timer_timeout)
-	print("Granade Launcher ammo = ", current_ammo)
+
+@rpc("authority", "call_local", "reliable")
+func rpc_update_ammo(new_ammo: int, max_ammo: int):
+	current_ammo = new_ammo
+	emit_signal("ammo_changed", current_ammo, max_ammo)
+
 
 func _process(delta: float) -> void:
 	if multiplayer.is_server() and current_ammo < max_ammo and reload_timer.is_stopped() and cooldown_timer.is_stopped():
@@ -32,6 +40,7 @@ func shoot():
 		reload_timer.stop()
 	current_ammo -= 1
 	cooldown_timer.start()
+	rpc_update_ammo.rpc(current_ammo, max_ammo)
 	print("Granade Launcher ammo = ", current_ammo)
 	var camera_origin = camera.global_transform.origin
 	var ray_direction = -camera.global_transform.basis.z
@@ -53,11 +62,10 @@ func shoot():
 func _on_reload_timer_timeout() -> void:
 	if multiplayer.is_server():
 		current_ammo += 1
+		rpc_update_ammo.rpc(current_ammo, max_ammo)
 		print("Granade Launcher ammo = ", current_ammo)
 		if current_ammo >= max_ammo:
 			reload_timer.stop()
-
-
 
 func _set_transform(player: Node):
 	transform = Transform3D.IDENTITY
@@ -112,6 +120,7 @@ func request_pickup(gun_path: NodePath):
 func attach_to_player(player_id: int):
 	print("Attaching gun to player ID: ", player_id)
 	holder_id = player_id
+	rpc_update_ammo.rpc(current_ammo, max_ammo)
 	if player_id == 0:
 		print("No player, gun stays at spawn")
 		return # No player, stay at spawn
