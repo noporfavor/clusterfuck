@@ -1,9 +1,6 @@
 extends Node3D
 
-signal ammo_changed(new_ammo: int, max_ammo: int)
-
 var camera: Camera3D
-
 @export var bullet_scene: PackedScene
 @export var shoot_force := 35.0
 @onready var muzzle: Node3D = $Muzzle
@@ -23,11 +20,13 @@ func _ready() -> void:
 		rpc_update_ammo.rpc(current_ammo, max_ammo)
 	reload_timer.timeout.connect(_on_reload_timer_timeout)
 
-@rpc("authority", "call_local", "reliable")
+@rpc("any_peer", "call_local", "reliable")
 func rpc_update_ammo(new_ammo: int, max_ammo: int):
 	current_ammo = new_ammo
-	emit_signal("ammo_changed", current_ammo, max_ammo)
-
+	if holder_id != 0:
+		var player = get_player_node(holder_id)
+		if player and player.get_multiplayer_authority() == multiplayer.get_unique_id():
+			player.rpc_on_gun_ammo_changed(new_ammo, max_ammo)
 
 func _process(delta: float) -> void:
 	if multiplayer.is_server() and current_ammo < max_ammo and reload_timer.is_stopped() and cooldown_timer.is_stopped():

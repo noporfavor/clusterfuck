@@ -4,7 +4,6 @@ extends CharacterBody3D
 @onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
 @onready var hand_socket: Node3D = $HandSocket
 @onready var ammo_label: Label = $CanvasLayer/Control/AmmoLabel
-
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
 @export var jump_velocity = 5.0
@@ -14,7 +13,6 @@ extends CharacterBody3D
 @export var coyote_time := 0.15
 @export var jump_buffer_time := 0.2
 @export var Velocity = velocity
-
 var input_enabled := true
 var current_gun: Node = null
 var jump_buffer_timer := 0.0
@@ -32,13 +30,10 @@ func _ready():
 					gun.reparent(player.get_node_or_null("HandSocket"))
 					gun.call_deferred("_set_transform", player)
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
-		ammo_label.text = "Ammo:  / "
-		if current_gun:
-			_connect_gun_signals(current_gun)
+		ammo_label.text = "  "
 
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
-
 func _setup_crosshair() -> void:
 	crosshair_label.text = "X"
 	crosshair_label.add_theme_color_override("font_color", Color.WHITE)
@@ -51,7 +46,6 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	rotate_y(deg_to_rad(-event.relative.x * mouse_sensitivity))
 	pivot.rotate_x(deg_to_rad(event.relative.y * mouse_sensitivity))
 	pivot.rotation.x = clamp(pivot.rotation.x, deg_to_rad(-50), deg_to_rad(65))
-
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
 		return
@@ -119,12 +113,9 @@ func _handle_shooting() -> void:
 @rpc("any_peer", "call_local", "reliable")
 func apply_knockback(force: Vector3):
 	velocity += force
-
 #func _handle_interaction() -> void:
 	#if not input_enabled or not Input.is_action_just_pressed("interact"):
-	# 
 	# FUNCION PARA DROPEAR ARMA EN MANO? QUIZA PA MELEE? / INTERACCION CON WEAS, ETC
-	#
 func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 	print("Equip attempt: input_enabled=", input_enabled, " gun.holder_id=", gun.holder_id, " player_id=", player_id)
 	if gun.holder_id != 0:
@@ -132,10 +123,7 @@ func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 		return
 	current_gun = gun
 	gun.rpc("attach_to_player", player_id)
-	if multiplayer.get_unique_id() == get_multiplayer_authority():
-		_connect_gun_signals(gun)
-func _connect_gun_signals(gun: Node) -> void:
-	if gun.has_signal("ammo_changed"):
-		gun.ammo_changed.connect(_on_gun_ammo_changed)
-func _on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
+
+@rpc("any_peer", "call_local")
+func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
 	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
