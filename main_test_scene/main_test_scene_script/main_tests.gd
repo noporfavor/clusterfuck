@@ -55,3 +55,6 @@ func _on_join_game_pressed(ip: String):
 	NetworkManager.join_game(ip)
 	_show_menu(false)
 	print("Join requested to ", ip)
+func _on_void_fall_body_entered(body: Node3D) -> void:
+	if multiplayer.is_server() and body.is_in_group("player"):
+		body.rpc("apply_damage", 200)

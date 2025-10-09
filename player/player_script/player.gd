@@ -113,7 +113,6 @@ func _handle_shooting() -> void:
 		if multiplayer.is_server():
 			current_gun.shoot()
 		else: current_gun.request_shoot.rpc_id(1)
-
 @rpc("any_peer", "call_local", "reliable")
 func apply_damage(damage_ammount: int):
 	player_health -= damage_ammount
@@ -154,7 +153,6 @@ func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 		return
 	current_gun = gun
 	gun.rpc("attach_to_player", player_id)
-
 @rpc("any_peer", "call_local")
 func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
 	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
