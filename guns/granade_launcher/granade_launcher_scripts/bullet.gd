@@ -4,10 +4,11 @@ extends RigidBody3D
 @export var explosion_force := 20.0
 @export var explosion_delay := 1.5
 @export var max_bounces := 3
-
+@export var explosion_damage: int = 20
+@export var direct_hit_damage: int = 40
 var bounce_count := 0
 var exploded := false
-
+var direct_hit_target: CharacterBody3D = null
 func _ready():
 	await get_tree().create_timer(explosion_delay).timeout
 	if not exploded:
@@ -32,6 +33,7 @@ func explode():
 	if exploded:
 		return
 	exploded = true
+	
 	if multiplayer.is_server():
 		var shape := SphereShape3D.new()
 		shape.radius = explosion_radius
@@ -53,7 +55,23 @@ func explode():
 			
 				elif body is CharacterBody3D:
 					body.rpc("apply_knockback", force)
+					var distance = global_transform.origin.distance_to(body.global_transform.origin)
+					var damage := 0
+					
+					if body == direct_hit_target:
+						damage = direct_hit_damage
+					else:
+						var t = clamp(distance / explosion_radius, 0.0, 1.0)
+						damage = int(lerp(direct_hit_damage, explosion_damage, t))
+					body.rpc("apply_damage", damage)
 	queue_free()
 
 func launch(impulse: Vector3):
 	linear_velocity = impulse
+
+func _on_body_entered(body: Node) -> void:
+	if exploded:
+		return
+	if body is CharacterBody3D:
+		direct_hit_target = body
+		explode()

@@ -89,6 +89,22 @@ offset_right = -88.32007
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="HealthControl" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="HealthLabel" type="Label" parent="CanvasLayer/HealthControl"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.45
+anchor_top = 0.5
+anchor_right = 4.05
+anchor_bottom = 15.125001
+offset_top = 527.0
+offset_bottom = -6.1035156e-05
+
 [node name="HandSocket" type="Node3D" parent="."]
 transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -0.288587, 0.22086, 0.0999999)
 

@@ -4,6 +4,7 @@ extends CharacterBody3D
 @onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
 @onready var hand_socket: Node3D = $HandSocket
 @onready var ammo_label: Label = $CanvasLayer/Control/AmmoLabel
+@onready var health_label: Label = $CanvasLayer/HealthControl/HealthLabel
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
 @export var jump_velocity = 5.0
@@ -12,7 +13,8 @@ extends CharacterBody3D
 @export var zoom_speed := 10.0
 @export var coyote_time := 0.15
 @export var jump_buffer_time := 0.2
-@export var Velocity = velocity
+@export var max_health := 150
+var player_health: int = max_health
 var input_enabled := true
 var current_gun: Node = null
 var jump_buffer_timer := 0.0
@@ -31,7 +33,9 @@ func _ready():
 					gun.call_deferred("_set_transform", player)
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
 		ammo_label.text = "  "
-
+		health_label.text = "%d" % player_health
+	if multiplayer.get_unique_id() != get_multiplayer_authority():
+		health_label.visible = false
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
 func _setup_crosshair() -> void:
@@ -110,6 +114,33 @@ func _handle_shooting() -> void:
 			current_gun.shoot()
 		else: current_gun.request_shoot.rpc_id(1)
 
+@rpc("any_peer", "call_local", "reliable")
+func apply_damage(damage_ammount: int):
+	player_health -= damage_ammount
+	health_label.text = "%d" % player_health
+	if multiplayer.get_unique_id() == get_multiplayer_authority():
+		health_label.text = "%d" % player_health
+	print("player health: ", player_health)
+	if player_health <= 0:
+		die()
+func die():
+	print("Player %s died" % name)
+	if multiplayer.is_server():
+		var respawn_pos = Vector3(3, 5, 3)
+		rpc("respawn", respawn_pos)
+	else:
+		rpc_id(1, "respawn_request")
+@rpc("any_peer", "call_local", "reliable")
+func respawn(respawn_pos: Vector3):
+	player_health = max_health
+	health_label.text = "%d" % player_health
+	global_position = respawn_pos
+	print("Player %s respawned at %s" % [name, respawn_pos])
+@rpc("any_peer", "call_local", "reliable")
+func respawn_request():
+	if multiplayer.is_server():
+		var random_pos = Vector3(randf_range(-3, 3), 5, randf_range(-3, 3))
+		rpc("respawn", random_pos)
 @rpc("any_peer", "call_local", "reliable")
 func apply_knockback(force: Vector3):
 	velocity += force
