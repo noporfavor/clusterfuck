@@ -1,15 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://gnaxaeefsf1i"]
+[gd_scene load_steps=5 format=3 uid="uid://gnaxaeefsf1i"]
 
 [ext_resource type="Script" uid="uid://b5ahx1u0rsq3l" path="res://player/player_script/player.gd" id="1_uappl"]
-[ext_resource type="Material" uid="uid://skssbdl4uo08" path="res://materials/playermat.tres" id="2_ocfq7"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_5ymgl"]
-
-[sub_resource type="SphereMesh" id="SphereMesh_o40eq"]
-
-[sub_resource type="SphereMesh" id="SphereMesh_hxhv8"]
+[ext_resource type="PackedScene" uid="uid://3npwrhgo0mx3" path="res://avatars/Avatar1.glb" id="2_uappl"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kdsk4"]
+radius = 0.4736328
+height = 2.9526367
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_onrkg"]
 properties/0/path = NodePath(".:position")
@@ -25,21 +21,16 @@ properties/2/replication_mode = 1
 [node name="Player" type="CharacterBody3D" groups=["enemy", "player"]]
 script = ExtResource("1_uappl")
 
-[node name="BodyMesh" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.154162, 0.599886, 0)
-material_override = ExtResource("2_ocfq7")
-mesh = SubResource("CapsuleMesh_5ymgl")
+[node name="Avatar1" parent="." instance=ExtResource("2_uappl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0, 0)
 
-[node name="eye1" type="MeshInstance3D" parent="BodyMesh"]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, -0.181397, 0.537166, 0.480068)
-mesh = SubResource("SphereMesh_o40eq")
-
-[node name="eye2" type="MeshInstance3D" parent="BodyMesh"]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0.16936, 0.539047, 0.5)
-mesh = SubResource("SphereMesh_hxhv8")
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="Avatar1/Armature/Skeleton3D" index="1"]
+transform = Transform3D(-0.13176756, -0.98759997, -0.08534357, -0.08534388, -0.07447223, 0.9935643, -0.9876004, 0.13820317, -0.07447253, -0.48422372, 1.2036724, -0.0123389885)
+bone_name = "RightHand"
+bone_idx = 47
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(0.52, 0, 0, 0, 0.52, 0, 0, 0, 0.52, 0.154162, 0.598389, 0)
+transform = Transform3D(0.52, 0, 0, 0, 0.52, 0, 0, 0, 0.52, 0.10138081, 0.7667035, 0)
 shape = SubResource("CapsuleShape3D_kdsk4")
 
 [node name="CameraOrigin" type="Node3D" parent="."]
@@ -105,11 +96,10 @@ anchor_bottom = 15.125001
 offset_top = 527.0
 offset_bottom = -6.1035156e-05
 
-[node name="HandSocket" type="Node3D" parent="."]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -0.288587, 0.22086, 0.0999999)
-
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 process_mode = 3
 replication_config = SubResource("SceneReplicationConfig_onrkg")
 metadata/global_position = Vector3(0, 0, 0)
 metadata/global_rotation = Vector3(0, 0, 0)
+
+[editable path="Avatar1"]

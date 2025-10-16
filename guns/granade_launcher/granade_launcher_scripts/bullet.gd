@@ -2,8 +2,7 @@ extends RigidBody3D
 
 @export var explosion_radius := 5.0
 @export var explosion_force := 20.0
-@export var explosion_delay := 1.5
-@export var max_bounces := 3
+@export var explosion_delay := 2
 @export var explosion_damage: int = 20
 @export var direct_hit_damage: int = 40
 var bounce_count := 0
@@ -22,9 +21,6 @@ func _integrate_forces(state):
 		if collider:
 			#print("Hit: ", collider.name, " | Groups: ", collider.get_groups())
 			if collider.is_in_group("enemy"):
-				explode()
-				return
-			if bounce_count >= max_bounces:
 				explode()
 				return
 			linear_velocity *= 0.9

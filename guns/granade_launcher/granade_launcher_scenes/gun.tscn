@@ -1,15 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://cnvbwvv0vgevv"]
+[gd_scene load_steps=6 format=3 uid="uid://cnvbwvv0vgevv"]
 
 [ext_resource type="Script" uid="uid://dysgnbqyj5aco" path="res://guns/granade_launcher/granade_launcher_scripts/gun.gd" id="1_afegp"]
 [ext_resource type="PackedScene" uid="uid://bqcf5atpundt" path="res://guns/granade_launcher/granade_launcher_scenes/bullet.tscn" id="2_d647a"]
-[ext_resource type="Material" uid="uid://cbt70qmkhbs5i" path="res://materials/gunmaterial2.tres" id="3_42ieb"]
+[ext_resource type="PackedScene" uid="uid://ctm3rxwf67x0" path="res://guns/grenade-launcher-model/Grenade Launcher.glb" id="3_frmi6"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_kw0bs"]
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_8iju2"]
-top_radius = 0.25
-bottom_radius = 0.325
-height = 0.86
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_kw0bs"]
 properties/0/path = NodePath(".:holder_id")
@@ -33,18 +28,11 @@ transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -0.0512054, 0.624635, 0
 transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
 shape = SubResource("BoxShape3D_kw0bs")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(-2.18557e-08, 0.5, 0, -0.5, -2.18557e-08, 0, 0, 0, 0.5, 0, 0.580616, 0)
-mesh = SubResource("CylinderMesh_8iju2")
-
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.113124, 0)
-material_override = ExtResource("3_42ieb")
-mesh = SubResource("CylinderMesh_8iju2")
-skeleton = NodePath("../..")
+[node name="Grenade Launcher2" parent="." instance=ExtResource("3_frmi6")]
+transform = Transform3D(-1.7484556e-08, 0, -0.4, 0, 0.4, 0, 0.4, 0, -1.7484556e-08, 0.3, 0.3, 0)
 
 [node name="Muzzle" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.394642, 0.611446, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34816942, 0.57201684, 0)
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("SceneReplicationConfig_kw0bs")

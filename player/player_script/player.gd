@@ -2,9 +2,9 @@ extends CharacterBody3D
 @onready var camera: Camera3D = $CameraOrigin/SpringArm3D/Camera3D
 @onready var pivot: Node3D = $CameraOrigin
 @onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
-@onready var hand_socket: Node3D = $HandSocket
 @onready var ammo_label: Label = $CanvasLayer/Control/AmmoLabel
 @onready var health_label: Label = $CanvasLayer/HealthControl/HealthLabel
+@onready var bone_attachment_3d: BoneAttachment3D = $Avatar1/Armature/Skeleton3D/BoneAttachment3D
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
 @export var jump_velocity = 5.0
@@ -29,7 +29,7 @@ func _ready():
 			if gun.holder_id != 0:
 				var player = gun.get_player_node(gun.holder_id)
 				if player:
-					gun.reparent(player.get_node_or_null("HandSocket"))
+					gun.reparent(player.get_node_or_null("Avatar1/Armature/Skeleton3D/BoneAttachment3D"))
 					gun.call_deferred("_set_transform", player)
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
 		ammo_label.text = "  "

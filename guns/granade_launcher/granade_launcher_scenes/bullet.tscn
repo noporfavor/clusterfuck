@@ -1,14 +1,15 @@
 [gd_scene load_steps=5 format=3 uid="uid://bqcf5atpundt"]
 
 [ext_resource type="Script" uid="uid://bj378yb3611rl" path="res://guns/granade_launcher/granade_launcher_scripts/bullet.gd" id="1_ws5de"]
+[ext_resource type="ArrayMesh" uid="uid://elb6w02r62qf" path="res://guns/grenade-launcher-model/grenade-model/m4.obj" id="2_hqsjs"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_v7oki"]
 friction = 0.0
 bounce = 0.7
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_rtl8c"]
-
-[sub_resource type="SphereMesh" id="SphereMesh_v7oki"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_0iw41"]
+radius = 0.2
+height = 0.8
 
 [node name="Bullet" type="RigidBody3D"]
 physics_material_override = SubResource("PhysicsMaterial_v7oki")
@@ -18,11 +19,11 @@ max_contacts_reported = 8
 script = ExtResource("1_ws5de")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(0.29, 0, 0, 0, 0.29, 0, 0, 0, 0.29, 0, 0, 0)
-shape = SubResource("SphereShape3D_rtl8c")
+transform = Transform3D(-1.2676304e-08, -0.29000002, 0, 0.29000002, -1.2676304e-08, 0, 0, 0, 0.29000002, -7.450581e-09, -4.440892e-16, 0)
+shape = SubResource("CapsuleShape3D_0iw41")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0, 0)
-mesh = SubResource("SphereMesh_v7oki")
+[node name="M4" type="MeshInstance3D" parent="."]
+transform = Transform3D(-8.742278e-11, 0, -0.002, 0, 0.002, 0, 0.002, 0, -8.742278e-11, 0.099999994, 1.1920929e-07, 7.599592e-07)
+mesh = ExtResource("2_hqsjs")
 
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]

@@ -76,10 +76,22 @@ func request_shoot():
 		shoot()
 
 func _deferred_reparent(player: Node):
-	reparent(player.get_node_or_null("HandSocket"))
-	transform = Transform3D.IDENTITY
-	camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
-	
+	var bone_attachment = player.get_node_or_null("Avatar1/Armature/Skeleton3D/BoneAttachment3D")
+	if bone_attachment:
+		reparent(bone_attachment)
+		transform = Transform3D.IDENTITY
+		camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
+		rpc("sync_reparent", bone_attachment.get_path())
+	else:
+		print("Error: BoneAttachment not found !")
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_reparent(bone_attachment_path: NodePath):
+	var bone_attachment = get_node_or_null(bone_attachment_path)
+	if bone_attachment:
+		reparent(bone_attachment)
+		transform = Transform3D.IDENTITY
+
 @rpc("any_peer", "reliable")
 func rpc_spawn_bullet(bullet_transform: Transform3D, velocity: Vector3):
 	if not multiplayer.is_server():		
