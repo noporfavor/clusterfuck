@@ -78,6 +78,12 @@ func request_shoot():
 func _deferred_reparent(player: Node):
 	var bone_attachment = player.get_node_or_null("Avatar1/Armature/Skeleton3D/BoneAttachment3D")
 	if bone_attachment:
+		bone_attachment.transform = Transform3D(
+			Basis()
+				.rotated(Vector3(1, 1, 1), deg_to_rad(-90))
+				.rotated(Vector3(0, 1, 0), deg_to_rad(90)),
+			Vector3(-0.4, 0.6, 0.5)
+		)
 		reparent(bone_attachment)
 		transform = Transform3D.IDENTITY
 		camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
