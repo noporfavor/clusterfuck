@@ -4,7 +4,8 @@ extends CharacterBody3D
 @onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
 @onready var ammo_label: Label = $CanvasLayer/Control/AmmoLabel
 @onready var health_label: Label = $CanvasLayer/HealthControl/HealthLabel
-@onready var bone_attachment_3d: BoneAttachment3D = $Avatar1/Armature/Skeleton3D/BoneAttachment3D
+@onready var animation_player: AnimationPlayer = $XBotPack/AnimationPlayer
+@onready var anim_tree: AnimationTree = $XBotPack/AnimationTree
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
 @export var jump_velocity = 5.0
@@ -20,8 +21,10 @@ var current_gun: Node = null
 var jump_buffer_timer := 0.0
 var coyote_timer := 0.0
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var current_anim_state := ""
 
 func _ready():
+	anim_tree.active = true
 	_setup_camera()
 	_setup_crosshair()
 	if multiplayer.is_server():
@@ -29,7 +32,7 @@ func _ready():
 			if gun.holder_id != 0:
 				var player = gun.get_player_node(gun.holder_id)
 				if player:
-					gun.reparent(player.get_node_or_null("Avatar1/Armature/Skeleton3D/BoneAttachment3D"))
+					gun.reparent(player.get_node_or_null($XBotPack/HandSocket))
 					gun.call_deferred("_set_transform", player)
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
 		ammo_label.text = "  "
@@ -50,6 +53,42 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	rotate_y(deg_to_rad(-event.relative.x * mouse_sensitivity))
 	pivot.rotate_x(deg_to_rad(event.relative.y * mouse_sensitivity))
 	pivot.rotation.x = clamp(pivot.rotation.x, deg_to_rad(-50), deg_to_rad(65))
+
+func _update_animation_state():
+	var move_input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var is_moving = move_input.length() > 0.1
+	var on_floor = is_on_floor()
+	var holding_rifle = current_gun != null
+	var new_state := ""
+	
+	if not on_floor:
+		new_state = "jump_rifle" if holding_rifle else "jump"
+	elif holding_rifle:
+		new_state = "rifle_run" if is_moving else "rifle_idle"
+	else:
+		new_state = "run" if is_moving else "idle"
+
+	if new_state != current_anim_state:
+		current_anim_state = new_state
+		_apply_animation_state(new_state)
+		
+		rpc("_sync_animation_state", new_state)
+func _apply_animation_state(state: String):
+	match state:
+		"rifle_run":
+			anim_tree.set("parameters/rifle run/blend_amount", 1.0)
+		"rifle_idle":
+			anim_tree.set("parameters/rifle run/blend_amount", -1.0)
+		"run":
+			anim_tree.set("parameters/run/blend_amount", 1.0)
+		"idle":
+			anim_tree.set("parameters/run/blend_amount", 0.0)
+		"jump_rifle":
+			anim_tree.set("parameters/rifle jump/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		"jump":
+			anim_tree.set("parameters/run jump/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
 		return
@@ -60,6 +99,7 @@ func _physics_process(_delta):
 	#_handle_interaction()
 	_handle_shooting()
 	move_and_slide()
+	_update_animation_state()
 func _apply_gravity(_delta) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * _delta
@@ -79,6 +119,7 @@ func _handle_movement(_delta) -> void:
 		if is_on_floor():
 			velocity.x = lerp(velocity.x, 0.0, 0.2)
 			velocity.z = lerp(velocity.z, 0.0, 0.2)
+	
 func _get_input_direction() -> Vector3:
 	if not input_enabled:
 		return Vector3.ZERO
@@ -156,3 +197,9 @@ func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 @rpc("any_peer", "call_local")
 func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
 	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
+
+
+@rpc("any_peer", "unreliable")
+func _sync_animation_state(state: String):
+	# This runs on remote clients
+	_apply_animation_state(state)

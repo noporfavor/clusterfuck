@@ -76,31 +76,25 @@ func request_shoot():
 		shoot()
 
 func _deferred_reparent(player: Node):
-	var bone_attachment = player.get_node_or_null("Avatar1/Armature/Skeleton3D/BoneAttachment3D")
-	if bone_attachment:
-		bone_attachment.transform = Transform3D(
-			Basis()
-				.rotated(Vector3(1, 1, 1), deg_to_rad(-90))
-				.rotated(Vector3(0, 1, 0), deg_to_rad(90)),
-			Vector3(-0.4, 0.6, 0.5)
-		)
-		reparent(bone_attachment)
+	var handsocket = player.get_node_or_null("XBotPack/HandSocket")
+	if handsocket: 
+		reparent(handsocket)
 		transform = Transform3D.IDENTITY
 		camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
-		rpc("sync_reparent", bone_attachment.get_path())
+		rpc("sync_reparent", handsocket.get_path())
 	else:
-		print("Error: BoneAttachment not found !")
+		print("Error: handsocket not found !")
 
 @rpc("any_peer", "call_local", "reliable")
-func sync_reparent(bone_attachment_path: NodePath):
-	var bone_attachment = get_node_or_null(bone_attachment_path)
-	if bone_attachment:
-		reparent(bone_attachment)
+func sync_reparent(handsocket_path: NodePath):
+	var handsocket = get_node_or_null(handsocket_path)
+	if handsocket:
+		reparent(handsocket)
 		transform = Transform3D.IDENTITY
 
 @rpc("any_peer", "reliable")
 func rpc_spawn_bullet(bullet_transform: Transform3D, velocity: Vector3):
-	if not multiplayer.is_server():		
+	if not multiplayer.is_server():
 		var bullet = bullet_scene.instantiate()
 		bullet.global_transform = bullet_transform
 		get_tree().current_scene.add_child(bullet)
