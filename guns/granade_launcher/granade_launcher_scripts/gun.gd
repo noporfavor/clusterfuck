@@ -76,7 +76,7 @@ func request_shoot():
 		shoot()
 
 func _deferred_reparent(player: Node):
-	var handsocket = player.get_node_or_null("XBotPack/HandSocket")
+	var handsocket = player.get_node_or_null("XBotPack/Armature/GeneralSkeleton/BoneAttachment3D/HandSocket")
 	if handsocket: 
 		reparent(handsocket)
 		transform = Transform3D.IDENTITY

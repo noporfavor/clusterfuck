@@ -32,7 +32,7 @@ func _ready():
 			if gun.holder_id != 0:
 				var player = gun.get_player_node(gun.holder_id)
 				if player:
-					gun.reparent(player.get_node_or_null($XBotPack/HandSocket))
+					gun.reparent(player.get_node_or_null($XBotPack/Armature/GeneralSkeleton/BoneAttachment3D/HandSocket))
 					gun.call_deferred("_set_transform", player)
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
 		ammo_label.text = "  "
@@ -87,7 +87,6 @@ func _apply_animation_state(state: String):
 			anim_tree.set("parameters/rifle jump/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		"jump":
 			anim_tree.set("parameters/run jump/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-
 
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
@@ -197,9 +196,6 @@ func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 @rpc("any_peer", "call_local")
 func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
 	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
-
-
 @rpc("any_peer", "unreliable")
 func _sync_animation_state(state: String):
-	# This runs on remote clients
 	_apply_animation_state(state)
