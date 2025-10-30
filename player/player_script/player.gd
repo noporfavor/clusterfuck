@@ -4,8 +4,8 @@ extends CharacterBody3D
 @onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
 @onready var ammo_label: Label = $CanvasLayer/Control/AmmoLabel
 @onready var health_label: Label = $CanvasLayer/HealthControl/HealthLabel
-@onready var animation_player: AnimationPlayer = $XBotPack/AnimationPlayer
-@onready var anim_tree: AnimationTree = $XBotPack/AnimationTree
+@onready var animation_player: AnimationPlayer = $YBotRPacked/AnimationPlayer
+@onready var anim_tree: AnimationTree = $YBotRPacked/AnimationTree
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
 @export var jump_velocity = 5.0
@@ -22,6 +22,8 @@ var jump_buffer_timer := 0.0
 var coyote_timer := 0.0
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var current_anim_state := ""
+var aim_idle_timer := 0.0
+
 
 func _ready():
 	anim_tree.active = true
@@ -32,7 +34,7 @@ func _ready():
 			if gun.holder_id != 0:
 				var player = gun.get_player_node(gun.holder_id)
 				if player:
-					gun.reparent(player.get_node_or_null($XBotPack/Armature/GeneralSkeleton/BoneAttachment3D/HandSocket))
+					gun.reparent(player.get_node_or_null($YBotRPacked/Armature/GeneralSkeleton/BoneAttachment3D/HandSocket))
 					gun.call_deferred("_set_transform", player)
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
 		ammo_label.text = "  "
@@ -59,35 +61,102 @@ func _update_animation_state():
 	var is_moving = move_input.length() > 0.1
 	var on_floor = is_on_floor()
 	var holding_rifle = current_gun != null
+	var aiming = input_enabled and Input.is_action_pressed("aim")
 	var new_state := ""
 	
+	if aim_idle_timer > 0.0:
+		aim_idle_timer -= get_physics_process_delta_time()
+	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+	#  RIFLE_HOLD_RUN NOT WORKING !                             #
+	#  THE TRANSITIONS ARE NOT SMOOTH !                         #
+	#  JUMPS NEEDS SOME LOOPING OF FREEZING OR SOMETHING (?)    #
+	#  TO-DO: PRESS SHIFT TO RUN FASTER (RIFLE_HOLD_RUN)        #
+	#  WHEN ALL THAT; ADD RUN BACKWARDS.                        #
+	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 	if not on_floor:
 		new_state = "jump_rifle" if holding_rifle else "jump"
 	elif holding_rifle:
-		new_state = "rifle_run" if is_moving else "rifle_idle"
+		if is_moving:
+			if aiming:
+				new_state = "rifle_aim_run"
+			else:
+				new_state = "rifle_hold_run"
+			aim_idle_timer = 0.0
+			if Input.is_action_just_pressed("shoot"):
+				new_state = "rifle_run_shot"
+		else:
+			if Input.is_action_just_pressed("shoot"):
+				new_state = "rifle_shot"
+				aim_idle_timer = 0.0
+			elif aiming:
+				new_state = "rifle_aim"
+				if current_anim_state != "rifle_aim":
+					aim_idle_timer = 2.0
+			else:
+				if aim_idle_timer <= 0.0:
+					new_state = "rifle_idle"
+				else:
+					new_state = "rifle_aim"
 	else:
 		new_state = "run" if is_moving else "idle"
-
+		
 	if new_state != current_anim_state:
 		current_anim_state = new_state
 		_apply_animation_state(new_state)
-		
 		rpc("_sync_animation_state", new_state)
 func _apply_animation_state(state: String):
 	match state:
-		"rifle_run":
-			anim_tree.set("parameters/rifle run/blend_amount", 1.0)
-		"rifle_idle":
-			anim_tree.set("parameters/rifle run/blend_amount", -1.0)
-		"run":
-			anim_tree.set("parameters/run/blend_amount", 1.0)
 		"idle":
-			anim_tree.set("parameters/run/blend_amount", 0.0)
-		"jump_rifle":
-			anim_tree.set("parameters/rifle jump/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-		"jump":
-			anim_tree.set("parameters/run jump/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+			anim_tree.set("parameters/Idle to Run/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
 
+		"run":
+			anim_tree.set("parameters/Idle to Run/blend_amount", 1.0)
+			# make sure rifle-run blends are off
+			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
+
+		"jump":
+			anim_tree.set("parameters/Jump 2/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+		# ---------------- rifle states ----------------
+		"rifle_aim":
+			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 1.0)
+			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
+
+		"rifle_idle":
+			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 1.0)
+			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
+
+		"rifle_hold_run":
+			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 1.0)
+			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
+			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
+
+		"rifle_aim_run":
+			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 1.0)
+			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
+			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 0.0)
+			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
+
+		"jump_rifle":
+			anim_tree.set("parameters/Jump Rifle/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+		"rifle_shot":
+			anim_tree.set("parameters/Stand Rifle Shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+		"rifle_run_shot":
+			anim_tree.set("parameters/Rifle Shot Run/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+		"reload":
+			anim_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
 		return

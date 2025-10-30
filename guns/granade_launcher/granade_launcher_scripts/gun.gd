@@ -2,7 +2,7 @@ extends Node3D
 
 var camera: Camera3D
 @export var bullet_scene: PackedScene
-@export var shoot_force := 35.0
+@export var shoot_force := 30.0
 @onready var muzzle: Node3D = $Muzzle
 @export var holder_id: int = 0
 @export var max_ammo := 6
@@ -31,7 +31,6 @@ func rpc_update_ammo(new_ammo: int, max_ammo: int):
 func _process(delta: float) -> void:
 	if multiplayer.is_server() and current_ammo < max_ammo and reload_timer.is_stopped() and cooldown_timer.is_stopped():
 		reload_timer.start()
-
 func shoot():
 	if not is_inside_tree() or not multiplayer.is_server() or current_ammo <= 0 or not cooldown_timer.is_stopped():
 		return
@@ -58,13 +57,23 @@ func shoot():
 	# RPC to client to spawn bullet
 	rpc_spawn_bullet.rpc(muzzle.global_transform, shoot_direction * shoot_force)
 
+@rpc("any_peer", "call_local", "reliable")
+func rpc_play_reload_anim(player_id: int):
+	var player = get_player_node(player_id)
+	if player and player.has_method("_apply_animation_state"):
+		player._apply_animation_state("reload")
+
+
 func _on_reload_timer_timeout() -> void:
 	if multiplayer.is_server():
 		current_ammo += 1
+	if holder_id != 0:
+		rpc_play_reload_anim.rpc(holder_id)
 		rpc_update_ammo.rpc(current_ammo, max_ammo)
 		print("Granade Launcher ammo = ", current_ammo)
 		if current_ammo >= max_ammo:
 			reload_timer.stop()
+			
 
 func _set_transform(player: Node):
 	transform = Transform3D.IDENTITY
@@ -76,7 +85,7 @@ func request_shoot():
 		shoot()
 
 func _deferred_reparent(player: Node):
-	var handsocket = player.get_node_or_null("XBotPack/Armature/GeneralSkeleton/BoneAttachment3D/HandSocket")
+	var handsocket = player.get_node_or_null("YBotRPacked/Armature/GeneralSkeleton/BoneAttachment3D/HandSocket")
 	if handsocket: 
 		reparent(handsocket)
 		transform = Transform3D.IDENTITY
