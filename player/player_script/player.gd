@@ -71,6 +71,7 @@ func _update_animation_state():
 	#  THE TRANSITIONS ARE NOT SMOOTH !                         #
 	#  JUMPS NEEDS SOME LOOPING OF FREEZING OR SOMETHING (?)    #
 	#  TO-DO: PRESS SHIFT TO RUN FASTER (RIFLE_HOLD_RUN)        #
+	#  SPRINT ADDED STILL RIFLE HOLD RUN IS NOT WORKING :(      #
 	#  WHEN ALL THAT; ADD RUN BACKWARDS.                        #
 	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 	if not on_floor:
@@ -80,7 +81,8 @@ func _update_animation_state():
 			if aiming:
 				new_state = "rifle_aim_run"
 			else:
-				new_state = "rifle_hold_run"
+				if Input.is_action_pressed("sprint"):
+					new_state = "rifle_hold_run"
 			aim_idle_timer = 0.0
 			if Input.is_action_just_pressed("shoot"):
 				new_state = "rifle_run_shot"
@@ -114,7 +116,6 @@ func _apply_animation_state(state: String):
 
 		"run":
 			anim_tree.set("parameters/Idle to Run/blend_amount", 1.0)
-			# make sure rifle-run blends are off
 			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
 			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
 
@@ -180,6 +181,10 @@ func _handle_movement(_delta) -> void:
 		if is_on_floor():
 			velocity.x = horizontal_velocity.x
 			velocity.z = horizontal_velocity.z
+			
+			if Input.is_action_pressed("sprint"):
+				velocity.x = horizontal_velocity.x * 2.0
+				velocity.z = horizontal_velocity.z * 2.0
 		else:
 			velocity.x = lerp(velocity.x, horizontal_velocity.x, 0.05)
 			velocity.z = lerp(velocity.z, horizontal_velocity.z, 0.05)
