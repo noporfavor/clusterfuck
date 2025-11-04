@@ -25,6 +25,8 @@ func rpc_update_ammo(new_ammo: int, max_ammo: int):
 	current_ammo = new_ammo
 	if holder_id != 0:
 		var player = get_player_node(holder_id)
+		if player:
+			player.play_shot_anim.rpc()
 		if player and player.get_multiplayer_authority() == multiplayer.get_unique_id():
 			player.rpc_on_gun_ammo_changed(new_ammo, max_ammo)
 
@@ -57,18 +59,13 @@ func shoot():
 	# RPC to client to spawn bullet
 	rpc_spawn_bullet.rpc(muzzle.global_transform, shoot_direction * shoot_force)
 
-@rpc("any_peer", "call_local", "reliable")
-func rpc_play_reload_anim(player_id: int):
-	var player = get_player_node(player_id)
-	if player and player.has_method("_apply_animation_state"):
-		player._apply_animation_state("reload")
-
-
 func _on_reload_timer_timeout() -> void:
 	if multiplayer.is_server():
 		current_ammo += 1
 	if holder_id != 0:
-		rpc_play_reload_anim.rpc(holder_id)
+		var player = get_player_node(holder_id)
+		if player:
+			player.play_reload_anim.rpc()
 		rpc_update_ammo.rpc(current_ammo, max_ammo)
 		print("Granade Launcher ammo = ", current_ammo)
 		if current_ammo >= max_ammo:
@@ -151,5 +148,3 @@ func attach_to_player(player_id: int):
 		player.current_gun = self
 	else:
 		print("Player not found for ID: ", player_id)
-func _physics_process(_delta):
-	pass

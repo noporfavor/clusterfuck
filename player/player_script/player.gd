@@ -27,7 +27,6 @@ var rifle_state_playback = null
 
 func _ready():
 	anim_tree.active = true
-	rifle_state_playback = anim_tree["parameters/RifleStateMachine/playback"]
 	_setup_camera()
 	_setup_crosshair()
 	if multiplayer.is_server():
@@ -59,11 +58,8 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 
 func _update_animation_state():
 	var move_input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var is_moving = move_input.length() > 0.1
 	var has_rifle = current_gun != null
 	var sprinting = input_enabled and Input.is_action_pressed("sprint")
-	var new_state := ""
-	var on_floor = is_on_floor()
 	
 	
 	var blend_pos = Vector2(move_input.x, move_input.y)
@@ -83,7 +79,6 @@ func _update_animation_state():
 				"parameters/RifleBlend/blend_amount": anim_tree["parameters/RifleBlend/blend_amount"],
 			},
 			"",
-			anim_tree["parameters/FinalBlend/blend_amount"]
 		)
 
 func _physics_process(_delta):
@@ -201,19 +196,22 @@ func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
 	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
 
 @rpc("any_peer", "call_local", "unreliable")
-func _sync_animation(blend_values: Dictionary, rifle_state: String, final_blend: float):
+func _sync_animation(blend_values: Dictionary, rifle_state: String):
 	if anim_tree == null: # or rifle_state_playback == null <- not needed as for the moment prob do another node
 		return
 	# Apply synced blend values
 	for key in blend_values:
 		anim_tree[key] = blend_values[key]
-	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-	#                        TO-DO                                #
-	#  GET A WAY TO PLAY, SHOT, RUN-SHOT, RIFLE-JUMP AND JUMP     #
-	#  PROB NO NEED FOR STATE MACHINE; SOMETHING SIMPLER          #
-	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-	#if rifle_state != "":
-		#rifle_state_playback.travel(rifle_state)
-	
-	#anim_tree["parameters/FinalBlend/blend_amount"] = final_blend
-	# # # # # # # # # # # # # # # # # # # # # # # # 
+
+# SHOT AND RELOAD ANIMATIONS ~
+@rpc("any_peer", "call_local", "unreliable")
+func play_shot_anim():
+	if anim_tree:
+		# BASICALLY SAME AS THE COMMENT BELLOW BUT THIS ANIMATION IS WORKING FINE, BUT IT SHOULD INTERRUPT RELOAD
+		anim_tree["parameters/Shot/request"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+
+@rpc("any_peer", "call_local", "unreliable")
+func play_reload_anim():
+	if anim_tree:
+		# NEED A WAY TO MAKE THE RELOAD PLAY ACCORDENLY TO THE RELOAD OF AMMO AND GET INTERRUPTED BY SHOT
+		anim_tree["parameters/Reload/request"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
