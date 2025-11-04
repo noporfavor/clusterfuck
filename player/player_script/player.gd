@@ -22,11 +22,12 @@ var jump_buffer_timer := 0.0
 var coyote_timer := 0.0
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var current_anim_state := ""
-var aim_idle_timer := 0.0
-
+var idle_timer := 0.0
+var rifle_state_playback = null
 
 func _ready():
 	anim_tree.active = true
+	rifle_state_playback = anim_tree["parameters/RifleStateMachine/playback"]
 	_setup_camera()
 	_setup_crosshair()
 	if multiplayer.is_server():
@@ -59,105 +60,32 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 func _update_animation_state():
 	var move_input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var is_moving = move_input.length() > 0.1
-	var on_floor = is_on_floor()
-	var holding_rifle = current_gun != null
-	var aiming = input_enabled and Input.is_action_pressed("aim")
+	var has_rifle = current_gun != null
+	var sprinting = input_enabled and Input.is_action_pressed("sprint")
 	var new_state := ""
+	var on_floor = is_on_floor()
 	
-	if aim_idle_timer > 0.0:
-		aim_idle_timer -= get_physics_process_delta_time()
-	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-	#  RIFLE_HOLD_RUN NOT WORKING !                             #
-	#  THE TRANSITIONS ARE NOT SMOOTH !                         #
-	#  JUMPS NEEDS SOME LOOPING OF FREEZING OR SOMETHING (?)    #
-	#  TO-DO: PRESS SHIFT TO RUN FASTER (RIFLE_HOLD_RUN)        #
-	#  SPRINT ADDED STILL RIFLE HOLD RUN IS NOT WORKING :(      #
-	#  WHEN ALL THAT; ADD RUN BACKWARDS.                        #
-	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-	if not on_floor:
-		new_state = "jump_rifle" if holding_rifle else "jump"
-	elif holding_rifle:
-		if is_moving:
-			if aiming:
-				new_state = "rifle_aim_run"
-			else:
-				if Input.is_action_pressed("sprint"):
-					new_state = "rifle_hold_run"
-			aim_idle_timer = 0.0
-			if Input.is_action_just_pressed("shoot"):
-				new_state = "rifle_run_shot"
-		else:
-			if Input.is_action_just_pressed("shoot"):
-				new_state = "rifle_shot"
-				aim_idle_timer = 0.0
-			elif aiming:
-				new_state = "rifle_aim"
-				if current_anim_state != "rifle_aim":
-					aim_idle_timer = 2.0
-			else:
-				if aim_idle_timer <= 0.0:
-					new_state = "rifle_idle"
-				else:
-					new_state = "rifle_aim"
-	else:
-		new_state = "run" if is_moving else "idle"
-		
-	if new_state != current_anim_state:
-		current_anim_state = new_state
-		_apply_animation_state(new_state)
-		rpc("_sync_animation_state", new_state)
-func _apply_animation_state(state: String):
-	match state:
-		"idle":
-			anim_tree.set("parameters/Idle to Run/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
+	
+	var blend_pos = Vector2(move_input.x, move_input.y)
+	anim_tree["parameters/Run no weapon/blend_position"] = blend_pos
+	anim_tree["parameters/Run aiming rifle/blend_position"] = blend_pos
+	anim_tree["parameters/Sprint holding rifle/blend_position"] = blend_pos
+	
+	anim_tree["parameters/RunBlend/blend_amount"] = 1.0 if has_rifle else 0.0
+	anim_tree["parameters/RifleBlend/blend_amount"] = 1.0 if sprinting else 0.0
+	if is_multiplayer_authority():
+		_sync_animation.rpc(
+			{
+				"parameters/Run no weapon/blend_position": anim_tree["parameters/Run no weapon/blend_position"],
+				"parameters/Run aiming rifle/blend_position": anim_tree["parameters/Run aiming rifle/blend_position"],
+				"parameters/Sprint holding rifle/blend_position": anim_tree["parameters/Sprint holding rifle/blend_position"],
+				"parameters/RunBlend/blend_amount": anim_tree["parameters/RunBlend/blend_amount"],
+				"parameters/RifleBlend/blend_amount": anim_tree["parameters/RifleBlend/blend_amount"],
+			},
+			"",
+			anim_tree["parameters/FinalBlend/blend_amount"]
+		)
 
-		"run":
-			anim_tree.set("parameters/Idle to Run/blend_amount", 1.0)
-			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
-
-		"jump":
-			anim_tree.set("parameters/Jump 2/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-
-		# ---------------- rifle states ----------------
-		"rifle_aim":
-			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 1.0)
-			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
-
-		"rifle_idle":
-			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 1.0)
-			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
-
-		"rifle_hold_run":
-			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 1.0)
-			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 0.0)
-			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
-
-		"rifle_aim_run":
-			anim_tree.set("parameters/Idle Rifle to Rifle Run/blend_amount", 1.0)
-			anim_tree.set("parameters/Idle Rifle To Rifle Hold Run/blend_amount", 0.0)
-			anim_tree.set("parameters/Rifle Aim Idle/blend_amount", 0.0)
-			anim_tree.set("parameters/Idle to Rifle Idle/blend_amount", 0.0)
-
-		"jump_rifle":
-			anim_tree.set("parameters/Jump Rifle/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-
-		"rifle_shot":
-			anim_tree.set("parameters/Stand Rifle Shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-
-		"rifle_run_shot":
-			anim_tree.set("parameters/Rifle Shot Run/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-
-		"reload":
-			anim_tree.set("parameters/Reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
 		return
@@ -267,9 +195,25 @@ func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
 		return
 	current_gun = gun
 	gun.rpc("attach_to_player", player_id)
+
 @rpc("any_peer", "call_local")
 func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
 	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
-@rpc("any_peer", "unreliable")
-func _sync_animation_state(state: String):
-	_apply_animation_state(state)
+
+@rpc("any_peer", "call_local", "unreliable")
+func _sync_animation(blend_values: Dictionary, rifle_state: String, final_blend: float):
+	if anim_tree == null: # or rifle_state_playback == null <- not needed as for the moment prob do another node
+		return
+	# Apply synced blend values
+	for key in blend_values:
+		anim_tree[key] = blend_values[key]
+	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+	#                        TO-DO                                #
+	#  GET A WAY TO PLAY, SHOT, RUN-SHOT, RIFLE-JUMP AND JUMP     #
+	#  PROB NO NEED FOR STATE MACHINE; SOMETHING SIMPLER          #
+	# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+	#if rifle_state != "":
+		#rifle_state_playback.travel(rifle_state)
+	
+	#anim_tree["parameters/FinalBlend/blend_amount"] = final_blend
+	# # # # # # # # # # # # # # # # # # # # # # # # 
