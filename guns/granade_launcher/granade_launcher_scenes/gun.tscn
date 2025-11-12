@@ -1,8 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://cnvbwvv0vgevv"]
+[gd_scene load_steps=8 format=3 uid="uid://cnvbwvv0vgevv"]
 
 [ext_resource type="Script" uid="uid://dysgnbqyj5aco" path="res://guns/granade_launcher/granade_launcher_scripts/gun.gd" id="1_afegp"]
 [ext_resource type="PackedScene" uid="uid://bqcf5atpundt" path="res://guns/granade_launcher/granade_launcher_scenes/bullet.tscn" id="2_d647a"]
 [ext_resource type="PackedScene" uid="uid://ctm3rxwf67x0" path="res://guns/grenade-launcher-model/Grenade Launcher.glb" id="3_frmi6"]
+[ext_resource type="AudioStream" uid="uid://dr3xr7l3ywqw6" path="res://SFX/grenade_launcher_shot.mp3" id="4_hy13q"]
+[ext_resource type="AudioStream" uid="uid://bcrblk6cr53ch" path="res://SFX/grenade-launcher-reload.mp3" id="5_tk01y"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_kw0bs"]
 
@@ -43,5 +45,11 @@ one_shot = true
 
 [node name="Reload_Timer" type="Timer" parent="."]
 wait_time = 0.9
+
+[node name="GL_shot" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("4_hy13q")
+
+[node name="GL_reload" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("5_tk01y")
 
 [connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered"]

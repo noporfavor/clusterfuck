@@ -9,6 +9,9 @@ var camera: Camera3D
 @export var shoot_cd := 0.4
 @onready var cooldown_timer: Timer = $Cooldown_Timer
 @onready var reload_timer: Timer = $Reload_Timer
+@onready var gl_shot: AudioStreamPlayer3D = $GL_shot
+@onready var gl_reload: AudioStreamPlayer3D = $GL_reload
+
 var current_ammo: int
 
 func _ready() -> void:
@@ -38,6 +41,7 @@ func shoot():
 		return
 	if not reload_timer.is_stopped():
 		reload_timer.stop()
+	gl_shot.play()
 	current_ammo -= 1
 	cooldown_timer.start()
 	rpc_update_ammo.rpc(current_ammo, max_ammo)
@@ -67,6 +71,7 @@ func _on_reload_timer_timeout() -> void:
 		if player:
 			player.play_reload_anim.rpc()
 		rpc_update_ammo.rpc(current_ammo, max_ammo)
+		gl_reload.play()
 		print("Granade Launcher ammo = ", current_ammo)
 		if current_ammo >= max_ammo:
 			reload_timer.stop()

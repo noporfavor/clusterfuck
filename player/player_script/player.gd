@@ -6,6 +6,11 @@ extends CharacterBody3D
 @onready var health_label: Label = $CanvasLayer/HealthControl/HealthLabel
 @onready var animation_player: AnimationPlayer = $YBotRPacked/AnimationPlayer
 @onready var anim_tree: AnimationTree = $YBotRPacked/AnimationTree
+@onready var footstep: AudioStreamPlayer3D = $YBotRPacked/Armature/GeneralSkeleton/LeftFoot/LeftFootArea/CollisionShape3D/footstep
+@onready var left_foot_area: Area3D = $YBotRPacked/Armature/GeneralSkeleton/LeftFoot/LeftFootArea
+@onready var right_foot_area: Area3D = $YBotRPacked/Armature/GeneralSkeleton/RightFoot/RightFootArea
+@onready var footstep_r: AudioStreamPlayer3D = $YBotRPacked/Armature/GeneralSkeleton/RightFoot/RightFootArea/CollisionShape3D/footstepR
+
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
 @export var jump_velocity = 5.0
@@ -14,7 +19,8 @@ extends CharacterBody3D
 @export var zoom_speed := 10.0
 @export var coyote_time := 0.15
 @export var jump_buffer_time := 0.2
-@export var max_health := 150
+@export var max_health := 100
+
 var player_health: int = max_health
 var input_enabled := true
 var current_gun: Node = null
@@ -41,6 +47,8 @@ func _ready():
 		health_label.text = "%d" % player_health
 	if multiplayer.get_unique_id() != get_multiplayer_authority():
 		health_label.visible = false
+
+
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
 func _setup_crosshair() -> void:
@@ -51,6 +59,7 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		_handle_mouse_motion(event)
+
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	rotate_y(deg_to_rad(-event.relative.x * mouse_sensitivity))
 	pivot.rotate_x(deg_to_rad(event.relative.y * mouse_sensitivity))
@@ -215,3 +224,11 @@ func play_reload_anim():
 	if anim_tree:
 		# NEED A WAY TO MAKE THE RELOAD PLAY ACCORDENLY TO THE RELOAD OF AMMO AND GET INTERRUPTED BY SHOT
 		anim_tree["parameters/Reload/request"] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+
+func _on_left_foot_area_body_entered(body: Node3D) -> void:
+	if body.is_in_group("ground"):
+		footstep.playing = true
+
+func _on_right_foot_area_body_entered(body: Node3D) -> void:
+	if body.is_in_group("ground"):
+		footstep_r.playing = true
