@@ -3,7 +3,6 @@ extends CanvasLayer
 signal start_game_requested
 signal join_game_requested(ip_address: String)
 signal host_pressed
-@onready var main: Node3D = $".."
 @onready var start_button: Button = $Panel/Control/BoxContainer/StartGame
 @onready var host_button: Button = $Panel/Control/BoxContainer/HostGame
 @onready var exit_button: Button = $Panel/Control/BoxContainer/ExitGame

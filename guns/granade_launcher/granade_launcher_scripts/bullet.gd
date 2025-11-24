@@ -71,7 +71,7 @@ func explode():
 					else:
 						var t = clamp(distance / explosion_radius, 0.0, 1.0)
 						damage = int(lerp(direct_hit_damage, explosion_damage, t))
-					body.rpc("apply_damage", damage)	
+					body.rpc("apply_damage", damage)
 	debris.emitting = true
 	smoke.emitting = true
 	fire.emitting = true

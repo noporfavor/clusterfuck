@@ -1,5 +1,7 @@
 extends Node3D
 
+const CLIP_SIZE := 6
+
 var camera: Camera3D
 @export var bullet_scene: PackedScene
 @export var shoot_force := 30.0
@@ -13,7 +15,7 @@ var camera: Camera3D
 @onready var gl_reload: AudioStreamPlayer3D = $GL_reload
 
 var current_ammo: int
-
+var reserved_ammo: int
 func _ready() -> void:
 	if multiplayer.is_server():
 		var synchronizer = get_node_or_null("MultiplayerSynchronizer")
@@ -24,26 +26,33 @@ func _ready() -> void:
 	reload_timer.timeout.connect(_on_reload_timer_timeout)
 
 @rpc("any_peer", "call_local", "reliable")
-func rpc_update_ammo(new_ammo: int, max_ammo: int):
+func rpc_update_ammo(new_ammo: int, _max_ammo: int):
 	current_ammo = new_ammo
 	if holder_id != 0:
 		var player = get_player_node(holder_id)
 		if player:
 			player.play_shot_anim.rpc()
 		if player and player.get_multiplayer_authority() == multiplayer.get_unique_id():
-			player.rpc_on_gun_ammo_changed(new_ammo, max_ammo)
+			player.rpc_on_gun_ammo_changed(new_ammo, _max_ammo)
 
-func _process(delta: float) -> void:
-	if multiplayer.is_server() and current_ammo < max_ammo and reload_timer.is_stopped() and cooldown_timer.is_stopped():
-		reload_timer.start()
+func ammo_pickup(ammo_ammount):
+	max_ammo += ammo_ammount
+	rpc_update_ammo.rpc(current_ammo, max_ammo)
+
+func try_start_reload():
+	if multiplayer.is_server():
+		if reload_timer.is_stopped() and current_ammo < CLIP_SIZE and max_ammo > 0: #and cooldown_timer.is_stopped()
+			reload_timer.start()       
+
 func shoot():
 	if not is_inside_tree() or not multiplayer.is_server() or current_ammo <= 0 or not cooldown_timer.is_stopped():
 		return
 	if not reload_timer.is_stopped():
 		reload_timer.stop()
-	gl_shot.play()
 	current_ammo -= 1
+	rpc("_shot_sfx")
 	cooldown_timer.start()
+	try_start_reload()
 	rpc_update_ammo.rpc(current_ammo, max_ammo)
 	print("Granade Launcher ammo = ", current_ammo)
 	var camera_origin = camera.global_transform.origin
@@ -55,7 +64,7 @@ func shoot():
 	var result = space_state.intersect_ray(query)
 
 	var target_pos = result.get("position", ray_end)
-	var shoot_direction = (target_pos - muzzle.global_transform.origin).normalized()	
+	var shoot_direction = (target_pos - muzzle.global_transform.origin).normalized()
 	var bullet = bullet_scene.instantiate()
 	bullet.global_transform = muzzle.global_transform
 	get_tree().current_scene.add_child(bullet)
@@ -65,17 +74,28 @@ func shoot():
 
 func _on_reload_timer_timeout() -> void:
 	if multiplayer.is_server():
+		if current_ammo >= CLIP_SIZE or max_ammo <= 0:
+			reload_timer.stop()
+			return
 		current_ammo += 1
+		max_ammo -= 1
+		rpc("_reload_sfx")
 	if holder_id != 0:
 		var player = get_player_node(holder_id)
 		if player:
 			player.play_reload_anim.rpc()
 		rpc_update_ammo.rpc(current_ammo, max_ammo)
-		gl_reload.play()
-		print("Granade Launcher ammo = ", current_ammo)
-		if current_ammo >= max_ammo:
-			reload_timer.stop()
-			
+		print("Clip ammo =", current_ammo, " | Reserved ammo =", max_ammo)
+		if current_ammo >= CLIP_SIZE:
+			try_start_reload()
+
+@rpc("any_peer", "call_local")
+func _shot_sfx():
+	gl_shot.play()
+
+@rpc("any_peer", "call_local")
+func _reload_sfx():
+	gl_reload.play()
 
 func _set_transform(player: Node):
 	transform = Transform3D.IDENTITY
@@ -116,6 +136,7 @@ func get_player_node(player_id: int) -> Node:
 		if node.get_multiplayer_authority() == player_id:
 			return node
 	return null
+
 func _on_area_3d_body_entered(body: Node3D) -> void:
 	if body.is_in_group("player") and holder_id == 0:
 		if multiplayer.is_server():
@@ -124,6 +145,7 @@ func _on_area_3d_body_entered(body: Node3D) -> void:
 		else:
 			print("Client requesting pickup for gun: ", get_path())
 			request_pickup.rpc_id(1, get_path())
+
 @rpc("any_peer", "reliable")
 func request_pickup(gun_path: NodePath):
 	if multiplayer.is_server():

@@ -11,13 +11,21 @@ config_version=5
 [application]
 
 config/name="clusterfuck"
-run/main_scene="uid://bn7lkaw4ww521"
+run/main_scene="uid://cpbxr20oq3vlc"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
 NetworkManager="*res://network_manager/network_manager.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/func_godot/plugin.cfg")
+
+[func_godot]
+
+default_map_settings="uid://bkhxcqsquw1yg"
 
 [input]
 
