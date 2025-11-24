@@ -15,4 +15,4 @@ Blender
 
 Mixamo
 
-and the gun and the bullet i have somewhere where it comes from but they are place holders for now, as for most things, I am actually a placeholder for fucking air =p
+and the gun and the bullet i have somewhere where it comes from, they are place holders for now, as for most things, I am actually a placeholder for fucking air =p
