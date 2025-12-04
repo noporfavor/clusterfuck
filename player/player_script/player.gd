@@ -1,4 +1,5 @@
 extends CharacterBody3D
+
 @onready var camera: Camera3D = $CameraOrigin/SpringArm3D/Camera3D
 @onready var pivot: Node3D = $CameraOrigin
 @onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
@@ -11,7 +12,9 @@ extends CharacterBody3D
 @onready var right_foot_area: Area3D = $YBotRPacked/Armature/GeneralSkeleton/RightFoot/RightFootArea
 @onready var footstep_r: AudioStreamPlayer3D = $YBotRPacked/Armature/GeneralSkeleton/RightFoot/RightFootArea/CollisionShape3D/footstepR
 @onready var pause_menu: Control = $PauseMenu
-
+@onready var skeleton: Skeleton3D = %GeneralSkeleton
+@onready var physical_bone: PhysicalBoneSimulator3D = $YBotRPacked/Armature/GeneralSkeleton/PhysicalBoneSimulator3D
+@onready var kill_count_label: Label = $CanvasLayer/KillsCounter/KillCountLabel
 
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
@@ -21,12 +24,18 @@ extends CharacterBody3D
 @export var zoom_speed := 10.0
 @export var coyote_time := 0.15
 @export var jump_buffer_time := 0.2
-@export var max_health := 100
 
+const BASE_MAX_HEALTH := 100
+const OVERHEAL_LIMIT := 200
+
+var player_last_hit: int = 0
+var kill_count: int = 0
+var is_overhealed = false
 var is_paused = false
-var player_health: int = max_health
+var player_health: int = BASE_MAX_HEALTH
 var input_enabled := true
 var current_gun: Node = null
+var back_gun: Node = null
 var jump_buffer_timer := 0.0
 var coyote_timer := 0.0
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -44,6 +53,15 @@ func _ready():
 		health_label.text = "%d" % player_health
 	if multiplayer.get_unique_id() != get_multiplayer_authority():
 		health_label.visible = false
+	if multiplayer.is_server():
+		kill_count_label.position.x = -300
+	else:
+		kill_count_label.position.x = 300
+	if multiplayer.get_unique_id() != get_multiplayer_authority():
+		kill_count_label.visible = false
+	if multiplayer.get_unique_id() != get_multiplayer_authority():
+		kill_count_label.text = "player %d" % kill_count
+	update_kill_ui()
 
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
@@ -80,13 +98,12 @@ func _update_animation_state():
 	var move_input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var has_rifle = current_gun != null
 	var sprinting = input_enabled and Input.is_action_pressed("sprint")
-	
-	
+
 	var blend_pos = Vector2(move_input.x, move_input.y)
 	anim_tree["parameters/Run no weapon/blend_position"] = blend_pos
 	anim_tree["parameters/Run aiming rifle/blend_position"] = blend_pos
 	anim_tree["parameters/Sprint holding rifle/blend_position"] = blend_pos
-	
+
 	anim_tree["parameters/RunBlend/blend_amount"] = 1.0 if has_rifle else 0.0
 	anim_tree["parameters/RifleBlend/blend_amount"] = 1.0 if sprinting else 0.0
 	if is_multiplayer_authority():
@@ -101,6 +118,17 @@ func _update_animation_state():
 			"",
 		)
 
+func _handle_weapon_swap():
+	if not input_enabled: 
+		return
+
+	if Input.is_action_just_pressed("swap_weapon"):
+		if current_gun == null and back_gun == null:
+			return
+
+		if current_gun != null and back_gun != null:
+			_swap_current_with_back_weapon()
+
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
 		return
@@ -108,8 +136,8 @@ func _physics_process(_delta):
 	_handle_movement(_delta)
 	_handle_zoom(_delta)
 	_handle_jump(_delta)
-	#_handle_interaction()
 	_handle_shooting()
+	_handle_weapon_swap()
 	move_and_slide()
 	_update_animation_state()
 
@@ -179,14 +207,31 @@ func _handle_shooting() -> void:
 
 @rpc("any_peer", "reliable")
 func heal_from_pack(heal_ammount: int):
+	if player_health >= OVERHEAL_LIMIT:
+		return
 	player_health += heal_ammount
 	health_label.text = "%d" % player_health
 	print("player heals ", heal_ammount)
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
 		health_label.text = "%d" % player_health
+	if player_health > BASE_MAX_HEALTH:
+		health_decay()
+
+func health_decay():
+	if is_overhealed:
+		return
+	if player_health > BASE_MAX_HEALTH:
+		is_overhealed = true
+		while player_health > BASE_MAX_HEALTH:
+			await get_tree().create_timer(0.5).timeout
+			player_health -= 1
+			health_label.text = "%d" % player_health
+		is_overhealed = false
 
 @rpc("any_peer", "call_local", "reliable")
-func apply_damage(damage_ammount: int):
+func apply_damage(damage_ammount: int, atkr_id: int = 0):
+	if atkr_id != 0:
+		multiplayer.get_unique_id()
 	player_health -= damage_ammount
 	health_label.text = "%d" % player_health
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
@@ -195,17 +240,37 @@ func apply_damage(damage_ammount: int):
 	if player_health <= 0:
 		die()
 
+func _ragdoll():
+	#set_physics_process(false) # not sure about this one either xd
+	physical_bone.active = true
+	animation_player.active = false
+	anim_tree.active = false
+	physical_bone.physical_bones_start_simulation()
+
 func die():
 	print("Player %s died" % name)
+	player_last_hit = multiplayer.get_unique_id()
+	if player_last_hit != 0:
+		rpc_id(player_last_hit, "add_kill")
+
+	_ragdoll()
+
+	await get_tree().create_timer(2.0).timeout
+	#set_physics_process(true) # not sure about this one
+	physical_bone.active = false
+	animation_player.active = true
+	anim_tree.active = true
+	physical_bone.physical_bones_stop_simulation()
+
 	if multiplayer.is_server():
-		var respawn_pos = Vector3(3, 5, 3)
+		var respawn_pos = Vector3(-22, 5, 20)
 		rpc("respawn", respawn_pos)
 	else:
 		rpc_id(1, "respawn_request")
 
 @rpc("any_peer", "call_local", "reliable")
 func respawn(respawn_pos: Vector3):
-	player_health = max_health
+	player_health = BASE_MAX_HEALTH
 	health_label.text = "%d" % player_health
 	global_position = respawn_pos
 	print("Player %s respawned at %s" % [name, respawn_pos])
@@ -213,24 +278,62 @@ func respawn(respawn_pos: Vector3):
 @rpc("any_peer", "call_local", "reliable")
 func respawn_request():
 	if multiplayer.is_server():
-		var random_pos = Vector3(randf_range(-3, 3), 5, randf_range(-3, 3))
+		var random_pos = Vector3(randf_range(-22, 3), 5, randf_range(-3, 20))
 		rpc("respawn", random_pos)
 
 @rpc("any_peer", "call_local", "reliable")
 func apply_knockback(force: Vector3):
 	velocity += force
 
-#func _handle_interaction() -> void:
-	#if not input_enabled or not Input.is_action_just_pressed("interact"):
-	# FUNCION PARA DROPEAR ARMA EN MANO? QUIZA PA MELEE? / INTERACCION CON WEAS, ETC
-
 func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
-	print("Equip attempt: input_enabled=", input_enabled, " gun.holder_id=", gun.holder_id, " player_id=", player_id)
 	if gun.holder_id != 0:
-		print("Cannot equip: input disabled or gun held", gun.holder_id)
 		return
-	current_gun = gun
-	gun.rpc("attach_to_player", player_id)
+
+	var type = gun.weapon_type
+	if has_weapon_type(type):
+		var owned := get_weapon_of_type(type)
+		if owned:
+			owned.ammo_pickup(gun.max_ammo)
+		if is_multiplayer_authority():
+			gun.queue_free()
+		return
+
+	if current_gun == null:
+		current_gun = gun
+		gun.rpc("attach_to_player", player_id)
+		return
+	if back_gun == null:
+		back_gun = gun
+		gun.rpc("attach_to_back", player_id)
+		return
+	print("holder id:", gun.holder_id)
+
+func _swap_current_with_back_weapon():
+	var hand := current_gun
+	var back := back_gun
+
+	if hand == null or back == null:
+		return
+
+	current_gun = back
+	back_gun = hand
+
+	current_gun.rpc("attach_to_player", multiplayer.get_unique_id())
+	back_gun.rpc("attach_to_back", multiplayer.get_unique_id())
+
+func has_weapon_type(type: String) -> bool:
+	if current_gun and current_gun.weapon_type == type:
+		return true
+	if back_gun and back_gun.weapon_type == type:
+		return true
+	return false
+
+func get_weapon_of_type(type: String) -> Node:
+	if current_gun and current_gun.weapon_type == type:
+		return current_gun
+	if back_gun and back_gun.weapon_type == type:
+		return back_gun
+	return null
 
 @rpc("any_peer", "reliable")
 func ammo_pack_picked(ammo_ammount: int):
@@ -241,15 +344,23 @@ func ammo_pack_picked(ammo_ammount: int):
 func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
 	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
 
+@rpc("any_peer", "call_local", "reliable")
+func add_kill():
+	kill_count += 1
+	update_kill_ui()
+
+func update_kill_ui():
+	var player_name := multiplayer.get_unique_id()
+	kill_count_label.text = "%s | DEATHS: %d" % [player_name, kill_count]
+
 @rpc("any_peer", "call_local", "unreliable")
 func _sync_animation(blend_values: Dictionary, _rifle_state: String):
-	if anim_tree == null: # <- #THIS NOT EVEN EXIST ANYMORE =P
+	if anim_tree == null:
 		return
-	# Apply synced blend values
+	# apply synced blend values
 	for key in blend_values:
 		anim_tree[key] = blend_values[key]
 
-# SHOT AND RELOAD ANIMATIONS ~ THE RELOAD IS OR SHOULD BE INTERRUPTED BY SHOOTING.
 @rpc("any_peer", "call_local", "unreliable")
 func play_shot_anim():
 	if anim_tree:

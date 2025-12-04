@@ -3,6 +3,7 @@ extends Node3D
 const CLIP_SIZE := 6
 
 var camera: Camera3D
+@export var weapon_type := "grenade_launcher"
 @export var bullet_scene: PackedScene
 @export var shoot_force := 30.0
 @onready var muzzle: Node3D = $Muzzle
@@ -38,10 +39,12 @@ func rpc_update_ammo(new_ammo: int, _max_ammo: int):
 func ammo_pickup(ammo_ammount):
 	max_ammo += ammo_ammount
 	rpc_update_ammo.rpc(current_ammo, max_ammo)
+	if max_ammo >= 0:
+		try_start_reload()
 
 func try_start_reload():
 	if multiplayer.is_server():
-		if reload_timer.is_stopped() and current_ammo < CLIP_SIZE and max_ammo > 0: #and cooldown_timer.is_stopped()
+		if reload_timer.is_stopped() and current_ammo < CLIP_SIZE and max_ammo > 0:
 			reload_timer.start()       
 
 func shoot():
@@ -112,15 +115,29 @@ func _deferred_reparent(player: Node):
 		reparent(handsocket)
 		transform = Transform3D.IDENTITY
 		camera = player.get_node_or_null("CameraOrigin/SpringArm3D/Camera3D")
-		rpc("sync_reparent", handsocket.get_path())
+		rpc("sync_reparent_hand", handsocket.get_path())
 	else:
 		print("Error: handsocket not found !")
 
+func _deferred_reparent_to_back(player: Node):
+	var backsocket = player.get_node_or_null("YBotRPacked/Armature/GeneralSkeleton/BoneAttachment3D2/BackSocket")
+	if backsocket: 
+		reparent(backsocket)
+		transform = Transform3D.IDENTITY
+		rpc("sync_reparent_back", backsocket.get_path())
+
 @rpc("any_peer", "call_local", "reliable")
-func sync_reparent(handsocket_path: NodePath):
+func sync_reparent_hand(handsocket_path: NodePath):
 	var handsocket = get_node_or_null(handsocket_path)
 	if handsocket:
 		reparent(handsocket)
+		transform = Transform3D.IDENTITY
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_reparent_back(backsocket_path: NodePath):
+	var backsocket = get_node_or_null(backsocket_path)
+	if backsocket:
+		reparent(backsocket)
 		transform = Transform3D.IDENTITY
 
 @rpc("any_peer", "reliable")
@@ -160,18 +177,28 @@ func request_pickup(gun_path: NodePath):
 		else:
 			print("Gun not available or invalid: ", gun)
 
-@rpc("authority", "call_local", "reliable")
+@rpc("any_peer", "call_local", "reliable")
 func attach_to_player(player_id: int):
+	set_multiplayer_authority(player_id)
 	print("Attaching gun to player ID: ", player_id)
 	holder_id = player_id
 	rpc_update_ammo.rpc(current_ammo, max_ammo)
 	if player_id == 0:
-		print("No player, gun stays at spawn")
-		return # No player, stay at spawn
-	var player = get_player_node(player_id) # to find player
+		return
+	var player = get_player_node(player_id)
 	if player:
 		print("Reparenting gun to player: ", player)
 		call_deferred("_deferred_reparent", player)
 		player.current_gun = self
-	else:
-		print("Player not found for ID: ", player_id)
+
+
+@rpc("any_peer", "call_local","reliable")
+func attach_to_back(player_id: int):
+	set_multiplayer_authority(player_id)
+	holder_id = player_id
+	if player_id == 0:
+		return
+	var player = get_player_node(player_id)
+	if player:
+		call_deferred("_deferred_reparent_to_back", player)
+		player.back_gun = self
