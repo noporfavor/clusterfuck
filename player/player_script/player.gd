@@ -28,9 +28,9 @@ extends CharacterBody3D
 const BASE_MAX_HEALTH := 100
 const OVERHEAL_LIMIT := 200
 
+var is_overhealed = false
 var player_last_hit: int = 0
 var kill_count: int = 0
-var is_overhealed = false
 var is_paused = false
 var player_health: int = BASE_MAX_HEALTH
 var input_enabled := true
@@ -207,11 +207,9 @@ func _handle_shooting() -> void:
 
 @rpc("any_peer", "reliable")
 func heal_from_pack(heal_ammount: int):
-	if player_health >= OVERHEAL_LIMIT:
-		return
-	player_health += heal_ammount
+	player_health = clamp(player_health + heal_ammount, 0, OVERHEAL_LIMIT)
 	health_label.text = "%d" % player_health
-	print("player heals ", heal_ammount)
+
 	if multiplayer.get_unique_id() == get_multiplayer_authority():
 		health_label.text = "%d" % player_health
 	if player_health > BASE_MAX_HEALTH:
@@ -239,7 +237,9 @@ func apply_damage(damage_ammount: int, atkr_id: int = 0):
 	print("player health: ", player_health)
 	if player_health <= 0:
 		die()
-
+# # # # # # # # # # # # # # # # # # # # # # # # # # 
+# NEED TO CLAMP HEALTH SO IT DOESN'T GO BELOW 0. #
+# # # # # # # # # # # # # # # # # # # # # # # # # 
 func _ragdoll():
 	#set_physics_process(false) # not sure about this one either xd
 	physical_bone.active = true

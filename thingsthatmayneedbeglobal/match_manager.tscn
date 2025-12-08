@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dg402ntodau56"]
+
+[ext_resource type="Script" uid="uid://ctm00xyfst38h" path="res://thingsthatmayneedbeglobal/match_manager.gd" id="1_h5160"]
+
+[node name="MatchManager" type="Node"]
+script = ExtResource("1_h5160")

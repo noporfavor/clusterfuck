@@ -90,11 +90,9 @@ func _connect_main_menu_signals(scene: Node) -> void:
 		if not scene.is_connected("start_game_requested", Callable(self, "_on_start_game_requested")):
 			scene.connect("start_game_requested", Callable(self, "_on_start_game_requested"))
 
-
-# Handlers that get called from main menu scene
+# NOT FUNCTIONAL ATM
 func _on_start_game_requested() -> void:
-	# Optional: if your main_menu emits start_game_requested meaning singleplayer/test,
-	# decide what to do here. I'll just log.
+	# singleplayer/test
 	print("Start requested from main menu")
 
 func _on_host_pressed() -> void:
