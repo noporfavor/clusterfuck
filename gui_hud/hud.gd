@@ -73,5 +73,6 @@ func _clear(node: Node) -> void:
 		child.queue_free()
 
 func toggle_scoreboard():
-	if Input.is_action_pressed("toggle_score_board"):
-		full_score_panel.visible = true
+	full_score_panel.visible = true
+func troggle_scoreboard():
+	full_score_panel.visible = false

@@ -2,9 +2,6 @@ extends CharacterBody3D
 
 @onready var camera: Camera3D = $CameraOrigin/SpringArm3D/Camera3D
 @onready var pivot: Node3D = $CameraOrigin
-@onready var crosshair_label: Label = $CanvasLayer/Crosshair/Label
-@onready var ammo_label: Label = $CanvasLayer/Control/AmmoLabel
-@onready var health_label: Label = $CanvasLayer/HealthControl/HealthLabel
 @onready var animation_player: AnimationPlayer = $YBotRPacked/AnimationPlayer
 @onready var anim_tree: AnimationTree = $YBotRPacked/AnimationTree
 @onready var footstep_l: AudioStreamPlayer3D = $YBotRPacked/Armature/GeneralSkeleton/LeftFoot/LeftFootArea/CollisionShape3D/footstep
@@ -14,7 +11,6 @@ extends CharacterBody3D
 @onready var pause_menu: Control = $PauseMenu
 @onready var skeleton: Skeleton3D = %GeneralSkeleton
 @onready var physical_bone: PhysicalBoneSimulator3D = $YBotRPacked/Armature/GeneralSkeleton/PhysicalBoneSimulator3D
-@onready var kill_count_label: Label = $CanvasLayer/KillsCounter/KillCountLabel
 
 @export var mouse_sensitivity = 0.5
 @export var move_speed = 5.5
@@ -42,32 +38,24 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var current_anim_state := ""
 var idle_timer := 0.0
 var rifle_state_playback = null
+var local_hud: CanvasLayer = null
 
 func _ready():
 	anim_tree.active = true
 	_setup_camera()
 	_setup_crosshair()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	if multiplayer.get_unique_id() == get_multiplayer_authority():
-		ammo_label.text = "  "
-		health_label.text = "%d" % player_health
-	if multiplayer.get_unique_id() != get_multiplayer_authority():
-		health_label.visible = false
-	if multiplayer.is_server():
-		kill_count_label.position.x = -300
-	else:
-		kill_count_label.position.x = 300
-	if multiplayer.get_unique_id() != get_multiplayer_authority():
-		kill_count_label.visible = false
-	if multiplayer.get_unique_id() != get_multiplayer_authority():
-		kill_count_label.text = "player %d" % kill_count
-	update_kill_ui()
+	if is_multiplayer_authority():
+		var hud_scene := preload("res://gui_hud/hud.tscn")
+		local_hud = hud_scene.instantiate()
+		get_tree().get_current_scene().add_child(local_hud)
+		local_hud.set_health(player_health)
 
 func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
+
 func _setup_crosshair() -> void:
-	crosshair_label.text = "X"
-	crosshair_label.add_theme_color_override("font_color", Color.WHITE)
+	pass # HACER UN CROSSHAIR UN PCO MAS DECENTE? O VOLVER A PONER UNA X (?)
 
 func _input(event):
 	if Input.is_action_just_pressed("ui_cancel"):
@@ -77,6 +65,11 @@ func _input(event):
 		return
 	if event is InputEventMouseMotion:
 		_handle_mouse_motion(event)
+
+	if Input.is_action_pressed("toggle_score_board") and local_hud:
+		local_hud.toggle_scoreboard()
+	elif Input.is_action_just_released("toggle_score_board") and local_hud:
+		local_hud.troggle_scoreboard()
 
 func _pause_menu():
 	is_paused = not is_paused
@@ -208,10 +201,9 @@ func _handle_shooting() -> void:
 @rpc("any_peer", "reliable")
 func heal_from_pack(heal_ammount: int):
 	player_health = clamp(player_health + heal_ammount, 0, OVERHEAL_LIMIT)
-	health_label.text = "%d" % player_health
+	if is_multiplayer_authority() and local_hud:
+		local_hud.set_health(player_health)
 
-	if multiplayer.get_unique_id() == get_multiplayer_authority():
-		health_label.text = "%d" % player_health
 	if player_health > BASE_MAX_HEALTH:
 		health_decay()
 
@@ -221,25 +213,24 @@ func health_decay():
 	if player_health > BASE_MAX_HEALTH:
 		is_overhealed = true
 		while player_health > BASE_MAX_HEALTH:
-			await get_tree().create_timer(0.5).timeout
+			await get_tree().create_timer(1.0).timeout
 			player_health -= 1
-			health_label.text = "%d" % player_health
+			if is_multiplayer_authority() and local_hud:
+				local_hud.set_health(player_health)
 		is_overhealed = false
 
 @rpc("any_peer", "call_local", "reliable")
-func apply_damage(damage_ammount: int, atkr_id: int = 0):
-	if atkr_id != 0:
-		multiplayer.get_unique_id()
+func apply_damage(damage_ammount: int):
 	player_health -= damage_ammount
-	health_label.text = "%d" % player_health
-	if multiplayer.get_unique_id() == get_multiplayer_authority():
-		health_label.text = "%d" % player_health
-	print("player health: ", player_health)
+	if is_multiplayer_authority() and local_hud:
+		local_hud.set_health(player_health)
+
 	if player_health <= 0:
 		die()
 # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # NEED TO CLAMP HEALTH SO IT DOESN'T GO BELOW 0. #
 # # # # # # # # # # # # # # # # # # # # # # # # # 
+
 func _ragdoll():
 	#set_physics_process(false) # not sure about this one either xd
 	physical_bone.active = true
@@ -247,11 +238,16 @@ func _ragdoll():
 	anim_tree.active = false
 	physical_bone.physical_bones_start_simulation()
 
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# PUT MATCHMAGER LOGIC HERE FOR DEATH COLLETCTION XD    #
+# THINK IF MAKE MATCHMANAGER AUTOLOAD OR INSIDE MAP (?) #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 func die():
 	print("Player %s died" % name)
 	player_last_hit = multiplayer.get_unique_id()
 	if player_last_hit != 0:
-		rpc_id(player_last_hit, "add_kill")
+		rpc_id(player_last_hit, "add_kill") # THIS REPLACE WITH MatchManager.report_death(uniqueid, playerlashit~)
 
 	_ragdoll()
 
@@ -271,7 +267,8 @@ func die():
 @rpc("any_peer", "call_local", "reliable")
 func respawn(respawn_pos: Vector3):
 	player_health = BASE_MAX_HEALTH
-	health_label.text = "%d" % player_health
+	if is_multiplayer_authority() and local_hud:
+		local_hud.set_health(player_health)
 	global_position = respawn_pos
 	print("Player %s respawned at %s" % [name, respawn_pos])
 
@@ -342,16 +339,8 @@ func ammo_pack_picked(ammo_ammount: int):
 
 @rpc("any_peer", "call_local")
 func rpc_on_gun_ammo_changed(new_ammo: int, max_ammo: int) -> void:
-	ammo_label.text = "Ammo: %d/%d" % [new_ammo, max_ammo]
-
-@rpc("any_peer", "call_local", "reliable")
-func add_kill():
-	kill_count += 1
-	update_kill_ui()
-
-func update_kill_ui():
-	var player_name := multiplayer.get_unique_id()
-	kill_count_label.text = "%s | DEATHS: %d" % [player_name, kill_count]
+	if is_multiplayer_authority() and local_hud:
+		local_hud.set_ammo(new_ammo, max_ammo)
 
 @rpc("any_peer", "call_local", "unreliable")
 func _sync_animation(blend_values: Dictionary, _rifle_state: String):
