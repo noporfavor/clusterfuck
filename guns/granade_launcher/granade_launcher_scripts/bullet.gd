@@ -16,6 +16,7 @@ var queue_free_timer = 2.8
 var bounce_count := 0
 var exploded := false
 var direct_hit_target: CharacterBody3D = null
+var attacker_id: int = 0
 
 func _ready():
 	await get_tree().create_timer(explosion_delay).timeout
@@ -76,7 +77,7 @@ func explode():
 					else:
 						var t = clamp(distance / explosion_radius, 0.0, 1.0)
 						damage = int(lerp(direct_hit_damage, explosion_damage, t))
-					body.rpc("apply_damage", damage)
+					body.rpc("apply_damage", damage, attacker_id)
 	debris.emitting = true
 	smoke.emitting = true
 	fire.emitting = true

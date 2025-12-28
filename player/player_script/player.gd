@@ -55,7 +55,10 @@ func _setup_camera() -> void:
 	camera.current = is_multiplayer_authority() and input_enabled
 
 func _setup_crosshair() -> void:
-	pass # HACER UN CROSSHAIR UN PCO MAS DECENTE? O VOLVER A PONER UNA X (?)
+	pass # HACER UN CROSSHAIR UN PCO MAS DECENTE? O VOLVER A PONER UNA X (?)#
+# PROBABLY THE HUD SHOULD HANDLE THE CROSSHAIR SO IT CAN BE PROPERLY SWAP   #
+# DEPENDING ON WHICH WEAPON IS ON USE                                       #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 func _input(event):
 	if Input.is_action_just_pressed("ui_cancel"):
@@ -70,6 +73,9 @@ func _input(event):
 		local_hud.toggle_scoreboard()
 	elif Input.is_action_just_released("toggle_score_board") and local_hud:
 		local_hud.troggle_scoreboard()
+
+	#if not MatchManager.match_running:
+		#return
 
 func _pause_menu():
 	is_paused = not is_paused
@@ -220,16 +226,19 @@ func health_decay():
 		is_overhealed = false
 
 @rpc("any_peer", "call_local", "reliable")
-func apply_damage(damage_ammount: int):
-	player_health -= damage_ammount
+func apply_damage(damage_ammount: int, attacker_id: int = 0):
+	if player_health <= 0:
+		return
+
+	player_last_hit = attacker_id
+
+	player_health = max(player_health - damage_ammount, 0) # CLAMPS THE HP SO IT NOT GO BELOW 0
+
 	if is_multiplayer_authority() and local_hud:
 		local_hud.set_health(player_health)
 
-	if player_health <= 0:
+	if player_health == 0:
 		die()
-# # # # # # # # # # # # # # # # # # # # # # # # # # 
-# NEED TO CLAMP HEALTH SO IT DOESN'T GO BELOW 0. #
-# # # # # # # # # # # # # # # # # # # # # # # # # 
 
 func _ragdoll():
 	#set_physics_process(false) # not sure about this one either xd
@@ -238,17 +247,21 @@ func _ragdoll():
 	anim_tree.active = false
 	physical_bone.physical_bones_start_simulation()
 
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# PUT MATCHMAGER LOGIC HERE FOR DEATH COLLETCTION XD    #
-# THINK IF MAKE MATCHMANAGER AUTOLOAD OR INSIDE MAP (?) #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 func die():
-	print("Player %s died" % name)
-	player_last_hit = multiplayer.get_unique_id()
-	if player_last_hit != 0:
-		rpc_id(player_last_hit, "add_kill") # THIS REPLACE WITH MatchManager.report_death(uniqueid, playerlashit~)
+	var victim_id := get_multiplayer_authority()
+	var killer_id := player_last_hit
 
+	if multiplayer.is_server():
+		MatchManager.report_death(victim_id, killer_id)
+	else:
+		MatchManager.rpc_id(
+			1,
+			"report_death",
+			victim_id,
+			killer_id
+		)
+
+	player_last_hit = 0
 	_ragdoll()
 
 	await get_tree().create_timer(2.0).timeout
@@ -270,7 +283,7 @@ func respawn(respawn_pos: Vector3):
 	if is_multiplayer_authority() and local_hud:
 		local_hud.set_health(player_health)
 	global_position = respawn_pos
-	print("Player %s respawned at %s" % [name, respawn_pos])
+	#print("Player %s respawned at %s" % [name, respawn_pos])
 
 @rpc("any_peer", "call_local", "reliable")
 func respawn_request():

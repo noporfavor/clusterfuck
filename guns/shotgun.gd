@@ -65,8 +65,21 @@ func get_random_spread_direction(forward: Vector3) -> Vector3:
 
 func apply_shotgun_damage(hit: Dictionary):
 	var body = hit["collider"]
-	if body.has_method("apply_damage"):
-		body.rpc("apply_damage", pellet_damage)
+
+	if not body.is_in_group("player"):
+		return
+
+	if holder_id == 0:
+		return
+
+	body.rpc(
+		"apply_damage",
+		pellet_damage,
+		holder_id
+	)
+
+	#if body.has_method("apply_damage"):
+		#body.rpc("apply_damage", pellet_damage)
 
 func get_player_node(player_id: int) -> Node:
 	for node in get_tree().get_nodes_in_group("player"):

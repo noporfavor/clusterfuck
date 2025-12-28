@@ -12,7 +12,7 @@ const DEFAULT_MAX_CLIENTS: int = 32
 const DEFAULT_IP: String = "127.0.0.1"
 
 var game_scene_initialized := false
-
+var local_player_name: String = ""
 
 func _ready() -> void:
 	get_tree().tree_changed.connect(_on_scene_changed)
@@ -27,7 +27,8 @@ func _ready() -> void:
 # # # # # # # # 
 # HOST / JOIN #
 # # # # # # # # 
-func host_game(port: int = DEFAULT_PORT, max_clients: int = DEFAULT_MAX_CLIENTS) -> bool:
+func host_game(player_name: String, port: int = DEFAULT_PORT, max_clients: int = DEFAULT_MAX_CLIENTS) -> bool:
+	local_player_name = player_name
 	if not _initialize_peer():
 		return false
 	var err: Error = peer.create_server(port, max_clients)
@@ -37,9 +38,11 @@ func host_game(port: int = DEFAULT_PORT, max_clients: int = DEFAULT_MAX_CLIENTS)
 		return false
 	multiplayer.multiplayer_peer = peer
 	print("Server hosted on port %d (peer ID: %d)" % [port, multiplayer.get_unique_id()])
+	MatchManager.register_player(multiplayer.get_unique_id(), local_player_name)
 	return await _load_lobby_scene()
 
-func join_game(ip: String = DEFAULT_IP, port: int = DEFAULT_PORT) -> bool:
+func join_game(player_name: String, ip: String = DEFAULT_IP, port: int = DEFAULT_PORT) -> bool:
+	local_player_name = player_name
 	if not _initialize_peer():
 		return false
 	var err: Error = peer.create_client(ip, port)
@@ -92,30 +95,27 @@ func _connect_main_menu_signals(scene: Node) -> void:
 
 # NOT FUNCTIONAL ATM
 func _on_start_game_requested() -> void:
-	# singleplayer/test
+	# singleplayer/test?
 	print("Start requested from main menu")
 
-func _on_host_pressed() -> void:
+func _on_host_pressed(player_name: String) -> void:
 	print("Host pressed — starting host flow")
-	host_game()
+	host_game(player_name)
 
-func _on_join_game_requested(ip: String) -> void:
+func _on_join_game_requested(ip: String, player_name: String) -> void:
 	print("Join requested to ", ip)
-	join_game(ip)
+	join_game(player_name, ip)
 
-# ----------------
-# Lobby / game loading
-# ----------------
+# # # # # # # # # # # # #
+# Lobby / game loading  #
+# # # # # # # # # # # # #
 func _change_scene(path: String) -> void:
 	get_tree().change_scene_to_file(path)
 	await get_tree().tree_changed
 
 func _load_lobby_scene() -> bool:
 	await _change_scene(LOBBY_SCENE)
-	if multiplayer.is_server():
-		print("Lobby loaded on server")
-	else:
-		print("Lobby loaded on client")
+
 	return true
 
 @rpc("authority")
@@ -143,8 +143,6 @@ func _on_game_scene_loaded(scene: Node) -> void:
 	# Tell the spawner which function to call (Callable to this script)
 	spawner.spawn_function = Callable(self, "spawn_player")
 
-	# If server, spawn connected peers + host
-	
 	if multiplayer.is_server():
 		var host_id := multiplayer.get_unique_id()
 		# spawn host
@@ -157,8 +155,20 @@ func _on_game_scene_loaded(scene: Node) -> void:
 			spawner.spawn({"id": id, "position": _get_spawn_point(scene, id)})
 			print(scene, id)
 
+	# REGISTER PLAYERS NAMES, SO SCOREBOARD IS VISIBLE EVEN IF THEY ARE NOT KILLS OR DEATHS
+	if multiplayer.is_server():
+		var host_id := multiplayer.get_unique_id()
+		MatchManager.ensure_player_exists(host_id)
+
+		for id in multiplayer.get_peers():
+			MatchManager.ensure_player_exists(id)
+
+			MatchManager.rpc("client_sync_scores", MatchManager.scores)
+
+	if multiplayer.is_server():
+		MatchManager.start_match()
+
 func spawn_player(spawn_data) -> Node:
-	# typeof seems to be not rly necessary now, idk xd
 	var data: Dictionary
 	if typeof(spawn_data) == TYPE_DICTIONARY:
 		data = spawn_data
@@ -221,15 +231,20 @@ func spawn_player(spawn_data) -> Node:
 	return player
 
 
+@rpc("any_peer", "reliable")
+func register_player_name(player_name: String):
+	var peer_id := multiplayer.get_remote_sender_id()
+	MatchManager.register_player(peer_id, player_name)
+	MatchManager.sync_player_names.rpc(MatchManager.player_names)
 
-# ----------------
-# Peer connection/disconnection
-# ----------------
+# # # # # # # # # # # # # # # # # 
+# Peer connection/disconnection #
+# # # # # # # # # # # # # # # # #
 func _on_peer_connected(id: int) -> void:
 	print("Peer connected:", id)
-	# We no longer spawn immediately here; spawning occurs after MetalTemple loads.
-	# If you want to notify lobby UI about new peer, rpc or call lobby node here.
+	print("[MatchManager] Peer connected:", id)
 
+# THIS IS NOT WORKING PROPERLY~
 func _on_peer_disconnected(id: int) -> void:
 	print("Peer disconnected:", id)
 	var scene = get_tree().current_scene
@@ -242,6 +257,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	print("Connected to server. My id:", multiplayer.get_unique_id())
+	rpc_id(1, "register_player_name", local_player_name)
 
 func _on_connection_failed() -> void:
 	print("Connection failed")

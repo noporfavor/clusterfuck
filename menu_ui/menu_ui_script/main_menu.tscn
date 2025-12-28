@@ -37,8 +37,12 @@ vertical = true
 metadata/_edit_use_anchors_ = true
 
 [node name="StartGame" type="Button" parent="Panel/Control/BoxContainer"]
+visible = false
 layout_mode = 2
 text = "Start"
+
+[node name="EnterName" type="LineEdit" parent="Panel/Control/BoxContainer"]
+layout_mode = 2
 
 [node name="HostGame" type="Button" parent="Panel/Control/BoxContainer"]
 layout_mode = 2
@@ -54,3 +58,18 @@ text = "Join"
 [node name="ExitGame" type="Button" parent="Panel/Control/BoxContainer"]
 layout_mode = 2
 text = "Exit"
+
+[node name="Label" type="Label" parent="Panel/Control"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.674
+anchor_bottom = 0.293
+offset_left = 176.0
+offset_top = -54.0
+offset_right = 143.08601
+offset_bottom = -54.733
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 0
+text = "< enter name here"
+horizontal_alignment = 2

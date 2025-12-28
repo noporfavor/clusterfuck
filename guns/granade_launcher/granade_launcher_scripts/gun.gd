@@ -17,6 +17,7 @@ var camera: Camera3D
 
 var current_ammo: int
 var reserved_ammo: int
+
 func _ready() -> void:
 	if multiplayer.is_server():
 		var synchronizer = get_node_or_null("MultiplayerSynchronizer")
@@ -70,10 +71,11 @@ func shoot():
 	var shoot_direction = (target_pos - muzzle.global_transform.origin).normalized()
 	var bullet = bullet_scene.instantiate()
 	bullet.global_transform = muzzle.global_transform
+	bullet.attacker_id = holder_id
 	get_tree().current_scene.add_child(bullet)
 	bullet.launch(shoot_direction * shoot_force)
 	# RPC to client to spawn bullet
-	rpc_spawn_bullet.rpc(muzzle.global_transform, shoot_direction * shoot_force)
+	rpc_spawn_bullet.rpc(muzzle.global_transform, shoot_direction * shoot_force, holder_id)
 
 func _on_reload_timer_timeout() -> void:
 	if multiplayer.is_server():
@@ -141,10 +143,11 @@ func sync_reparent_back(backsocket_path: NodePath):
 		transform = Transform3D.IDENTITY
 
 @rpc("any_peer", "reliable")
-func rpc_spawn_bullet(bullet_transform: Transform3D, velocity: Vector3):
+func rpc_spawn_bullet(bullet_transform: Transform3D, velocity: Vector3, attacker_id: int):
 	if not multiplayer.is_server():
 		var bullet = bullet_scene.instantiate()
 		bullet.global_transform = bullet_transform
+		bullet.attacker_id = holder_id
 		get_tree().current_scene.add_child(bullet)
 		bullet.launch(velocity)
 

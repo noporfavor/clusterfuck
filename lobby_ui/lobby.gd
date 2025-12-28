@@ -12,6 +12,7 @@ func _ready():
 	start_button.pressed.connect(_on_start_pressed)
 	
 	# list for connected peers
+	MatchManager.player_list_changed.connect(_refresh_player_list)
 	_refresh_player_list()
 
 	# connect multiplayer events
@@ -32,8 +33,17 @@ func _refresh_player_list():
 
 func _add_player(id: int, is_ready: bool):
 	var label = Label.new()
-	label.name = "player_%d" % id
-	label.text = "Player %d — %s" % [id, ("READY" if is_ready else "NOT READY")]
+
+	var player_name = MatchManager.player_names.get(
+		id,
+		"Player %d" % id
+	)
+
+	label.text = "%s — %s" %[
+		player_name,
+		("READY" if is_ready else "NOT READY")
+	]
+
 	player_list.add_child(label)
 
 func _on_peer_connected(id: int):
@@ -69,14 +79,14 @@ func rpc_set_ready(id: int):
 
 	if multiplayer.is_server():
 		_check_all_ready()
+
 func _check_all_ready():
 	if not local_ready:
 		return
 
-	# every connected peer check
 	for peer_id in multiplayer.get_peers():
 		if not players_ready.get(peer_id, false):
-			return  # weones still not ready
+			return
 
 	start_button.disabled = false
 
