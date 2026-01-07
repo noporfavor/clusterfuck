@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://ci0n6731i1q8w"]
+[gd_scene load_steps=3 format=3 uid="uid://ci0n6731i1q8w"]
 
 [ext_resource type="Script" uid="uid://8oocm4qvdhtj" path="res://gui_hud/hud.gd" id="1_aj7xj"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_aj7xj"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_aj7xj")
@@ -85,3 +87,27 @@ grow_vertical = 0
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
+
+[node name="MatchEnd" type="Panel" parent="Control"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_aj7xj")
+
+[node name="ReMatchButton" type="Button" parent="Control/MatchEnd"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -4.0
+offset_top = -8.0
+offset_right = 4.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "REMATCH"

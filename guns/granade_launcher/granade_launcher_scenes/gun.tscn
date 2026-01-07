@@ -19,14 +19,14 @@ properties/2/path = NodePath(".:rotation")
 properties/2/spawn = true
 properties/2/replication_mode = 1
 
-[node name="Gun" type="Node3D" groups=["gun"]]
+[node name="Gun" type="Node3D"]
 script = ExtResource("1_afegp")
 bullet_scene = ExtResource("2_d647a")
 
 [node name="Area3D" type="Area3D" parent="."]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0.14561462, 0.624635, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" groups=["gun"]]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
 transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
 shape = SubResource("BoxShape3D_kw0bs")
 

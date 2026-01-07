@@ -10,6 +10,8 @@ const MAX_KILL_FEED_ENTRIES := 3
 @onready var health_label: Label = $Control/HealthLabel
 @onready var ammo_label: Label = $Control/AmmoLabel
 @onready var match_timer_label: Label = $Control/MatchTimerLabel
+@onready var match_end_panel: Panel = $Control/MatchEnd
+@onready var re_match_button: Button = $Control/MatchEnd/ReMatchButton
 
 var local_peer_id: int = -1
 
@@ -19,6 +21,7 @@ func _ready() -> void:
 	MatchManager.scores_updated.connect(update_scoreboard)
 	MatchManager.match_time_updated.connect(_on_match_time_updated)
 	MatchManager.match_ended.connect(_on_match_ended)
+	re_match_button.pressed.connect(_on_rematch_pressed)
 	setup_local(multiplayer.get_unique_id())
 
 func _on_kill_event(killer_id: int, victim_id: int) -> void:
@@ -155,7 +158,12 @@ func _on_match_time_updated(time_left: float) -> void:
 func _on_match_ended(winner_peer_id: int) -> void:
 	var winner_name = MatchManager.get_player_name(winner_peer_id)
 	match_timer_label.text = "WINNER: %s" % winner_name
+	match_end_panel.visible = true
 
+func _on_rematch_pressed():
+	MatchManager.rpc_id(1, "rematch_requested")
+	match_end_panel.visible = false
+	print("%d pressed rematch " % multiplayer.get_unique_id())
 
 func _sort_scores_desc(a: Dictionary, b: Dictionary) -> bool:
 	# most kills top leaderboard

@@ -23,6 +23,7 @@ func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnect)
+	MatchManager.ready_to_rematch.connect(_on_ready_to_rematch)#SIGNAL TO RESTART MATCH/RELOAD MAP/RESPAWN PLAYERS
 
 # # # # # # # # 
 # HOST / JOIN #
@@ -124,6 +125,31 @@ func start_match() -> void:
 	rpc("load_game_map")
 	load_game_map()
 
+# REMATCH
+func _on_ready_to_rematch():
+	if not multiplayer.is_server():
+		return
+
+	MatchManager.reset_match()
+
+	var scene := get_tree().current_scene
+
+	# Respawn all clients
+	for id in multiplayer.get_peers():
+		var player := scene.get_node_or_null("player_%d" % id)
+		if player:
+			var spawn := _get_spawn_point(scene, id)
+			player.reset_for_match(spawn)
+
+	# Respawn host
+	var host_id := multiplayer.get_unique_id()
+	var host_player := scene.get_node_or_null("player_%d" % host_id)
+	if host_player:
+		var spawn := _get_spawn_point(scene, host_id)
+		host_player.reset_for_match(spawn)
+
+	MatchManager.start_match()
+
 @rpc("any_peer")
 func load_game_map() -> void:
 	# All peers will execute this and change to the game map
@@ -132,6 +158,7 @@ func load_game_map() -> void:
 # # # # # # # # # # # # # # # # #
 # Game scene setup and spawning #
 # # # # # # # # # # # # # # # # #
+
 func _on_game_scene_loaded(scene: Node) -> void:
 	if game_scene_initialized:
 		return
@@ -229,7 +256,6 @@ func spawn_player(spawn_data) -> Node:
 
 	# Return node; MultiplayerSpawner will add it to the scene tree
 	return player
-
 
 @rpc("any_peer", "reliable")
 func register_player_name(player_name: String):

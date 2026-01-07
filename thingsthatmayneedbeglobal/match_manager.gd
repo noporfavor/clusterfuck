@@ -6,13 +6,15 @@ signal player_list_changed
 signal match_started(duration: float)
 signal match_time_updated(time_left: float)
 signal match_ended(winner_peer_id: int)
+signal ready_to_rematch
 
 var match_running := false
 var match_duration := 180
 var match_time_left := 0.0
-var kill_limit := 2
+var kill_limit := 1
 var scores := {} # Dictionary: peer_id -> {kills: 0, deaths: 0, name: ""}
 var player_names := {}
+var rematch_ready := {} # peer_id -> bool
 
 func _ready():
 	if multiplayer.is_server():
@@ -21,9 +23,10 @@ func _ready():
 		print("[MatchManager] Client ready")
 
 func _process(delta: float) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		return
 	if not multiplayer.is_server():
 		return
-
 	if not match_running:
 		return
 
@@ -140,9 +143,40 @@ func end_match():
 
 	match_running = false
 
-# this should be name of player instead of id, at least later, for showing on screen.
 	var winner_id := _get_winner_peer_id()
 
 	print("[MatchManager] Match ended. Winner:", winner_id)
 
 	rpc("client_match_ended", winner_id)
+
+@rpc("authority", "call_local", "reliable")
+func reset_match():
+	match_running = false
+	match_time_left = match_duration
+
+	for id in scores.keys():
+		scores[id]["kills"] = 0
+		scores[id]["deaths"] = 0
+
+	emit_signal("scores_updated", scores)
+
+@rpc("any_peer", "call_local", "reliable")
+func rematch_requested():
+	if not multiplayer.is_server():
+		return
+
+	var peer_id := multiplayer.get_remote_sender_id()
+	if peer_id == 0:
+		peer_id = 1 # <- HOST HOST HSOT HSTO THO STHOS 
+
+	rematch_ready[peer_id] = true
+
+	var all_peers := multiplayer.get_peers()
+	all_peers.append(1) # <- include host
+
+	for id in all_peers:
+		if not rematch_ready.get(id, false):
+			return
+
+	rematch_ready.clear()
+	emit_signal("ready_to_rematch")

@@ -8,11 +8,11 @@
 [ext_resource type="Texture2D" uid="uid://bm6s6a3gcungu" path="res://textures/256x256/Bricks/Bricks_16-256x256.png" id="5_aak8f"]
 [ext_resource type="Texture2D" uid="uid://n554e6hy4xvj" path="res://textures/256x256/Wood/Wood_02-256x256.png" id="6_w40gc"]
 [ext_resource type="Texture2D" uid="uid://sppwcx1rlmkc" path="res://textures/256x256/Wood/Wood_09-256x256.png" id="7_dgybt"]
-[ext_resource type="PackedScene" uid="uid://cnvbwvv0vgevv" path="res://guns/granade_launcher/granade_launcher_scenes/gun.tscn" id="9_008ax"]
 [ext_resource type="PackedScene" uid="uid://dht314g1pymog" path="res://pickables/heal_pot.tscn" id="9_w40gc"]
 [ext_resource type="PackedScene" uid="uid://drtvbuc25567k" path="res://pickables/health_pack.tscn" id="10_06ue0"]
 [ext_resource type="PackedScene" uid="uid://bypvohmhebset" path="res://pickables/ammo_pack.tscn" id="11_aak8f"]
 [ext_resource type="PackedScene" uid="uid://dq6ti10p6fkm" path="res://guns/shotgun.tscn" id="13_dgybt"]
+[ext_resource type="PackedScene" uid="uid://cv5geq2dogtxf" path="res://pickables/gun_pickup.tscn" id="14_0xqsh"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0xqsh"]
 albedo_texture = ExtResource("3_008ax")
@@ -221,12 +221,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.97291, 6.374264, 0)
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
 spawn_path = NodePath("..")
 
-[node name="Gun" parent="." instance=ExtResource("9_008ax")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.5, 2, 10.2)
-
-[node name="Gun2" parent="." instance=ExtResource("9_008ax")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 2, 12)
-
 [node name="HealthPack" parent="." instance=ExtResource("10_06ue0")]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.59999967, 1.6999999, -1.8999994)
 
@@ -304,3 +298,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.300001, 1.3, -13)
 
 [node name="shotgun2" parent="." instance=ExtResource("13_dgybt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.4, 0.8, -17.9)
+
+[node name="GunPickup" parent="." instance=ExtResource("14_0xqsh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 1.5, 15)

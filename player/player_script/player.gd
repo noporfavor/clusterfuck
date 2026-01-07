@@ -74,9 +74,6 @@ func _input(event):
 	elif Input.is_action_just_released("toggle_score_board") and local_hud:
 		local_hud.troggle_scoreboard()
 
-	#if not MatchManager.match_running:
-		#return
-
 func _pause_menu():
 	is_paused = not is_paused
 	if is_paused:
@@ -127,6 +124,59 @@ func _handle_weapon_swap():
 
 		if current_gun != null and back_gun != null:
 			_swap_current_with_back_weapon()
+
+# # # # # # # # # # # # 
+#    REMATCH LOGIC    #
+# # # # # # # # # # # # 
+
+func reset_for_match(spawn_pos: Vector3):
+	if not multiplayer.is_server():
+		return
+
+	# Reset core state
+	player_health = BASE_MAX_HEALTH
+	player_last_hit = 0
+	velocity = Vector3.ZERO
+	is_overhealed = false
+
+	# Reset animation / physics
+	physical_bone.active = false
+	physical_bone.physical_bones_stop_simulation()
+	animation_player.active = true
+	anim_tree.active = true
+
+	# Remove weapons
+	if multiplayer.is_server():
+		rpc("_clear_weapons")
+	else:
+		rpc("_clear_weapons")
+
+	# Teleport
+	global_position = spawn_pos
+
+	# Sync to owner
+	rpc("client_sync_match_reset", spawn_pos)
+
+@rpc("any_peer", "call_local")
+func _clear_weapons():
+	if current_gun:
+		current_gun.queue_free()
+		current_gun = null
+
+	if back_gun:
+		back_gun.queue_free()
+		back_gun = null
+
+@rpc("any_peer", "call_local", "reliable")
+func client_sync_match_reset(spawn_pos: Vector3):
+	player_health = BASE_MAX_HEALTH
+	velocity = Vector3.ZERO
+	global_position = spawn_pos
+
+# RESET THE AMMO LABEL TO SHOW NOTHING ? 
+	#if local_hud:
+		#local_hud.set_health(player_health)
+		#local_hud.set_ammo()
 
 func _physics_process(_delta):
 	if not is_multiplayer_authority():
