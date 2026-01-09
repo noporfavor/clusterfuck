@@ -5,7 +5,7 @@ extends Node3D
 
 @onready var area: Area3D = $Area3D
 @onready var col: CollisionShape3D = $Area3D/CollisionShape3D
-@onready var mesh: MeshInstance3D = $"Grenade Launcher"
+@onready var mesh: MeshInstance3D = $Cylinder_001
 
 var is_active := true
 
@@ -16,8 +16,9 @@ func _on_area_3d_body_entered(body: Node3D) -> void:
 	if body is CharacterBody3D:
 		is_active = false
 
+
 		# spawn the REAL weapon
-		var weapon = preload("uid://cnvbwvv0vgevv").instantiate()
+		var weapon = preload("uid://dq6ti10p6fkm").instantiate()
 		get_tree().current_scene.add_child(weapon)
 		weapon.global_transform = global_transform
 		weapon.set_multiplayer_authority(body.get_multiplayer_authority())

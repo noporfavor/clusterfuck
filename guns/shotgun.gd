@@ -5,6 +5,8 @@ var camera: Camera3D
 @export var weapon_type := "shotgun"
 @onready var muzzle: Marker3D = $Muzzle
 @onready var reload_timer: Timer = $Reload_Timer
+@onready var sfx_shotgun_shot: AudioStreamPlayer3D = $sfx_shotgun_shot
+@onready var sfx_reload_shotgun: AudioStreamPlayer3D = $sfx_reload_shotgun
 @export var holder_id: int = 0
 var pellet_damage: int = 10
 var max_ammo: int = 12
@@ -25,6 +27,7 @@ func shoot():
 	if current_ammo <= 0:
 		return
 	current_ammo -= 1
+	rpc("_shot_sfx")
 	try_start_reload()
 	rpc_update_ammo.rpc(current_ammo, max_ammo)
 
@@ -52,6 +55,14 @@ func shoot():
 		if result:
 			apply_shotgun_damage(result)
 
+@rpc("any_peer", "call_local")
+func _shot_sfx():
+	sfx_shotgun_shot.play()
+
+@rpc("any_peer", "call_local")
+func _reload_sfx():
+	sfx_reload_shotgun.play()
+
 @rpc("any_peer", "reliable")
 func request_shoot():
 	if multiplayer.is_server():
@@ -77,9 +88,6 @@ func apply_shotgun_damage(hit: Dictionary):
 		pellet_damage,
 		holder_id
 	)
-
-	#if body.has_method("apply_damage"):
-		#body.rpc("apply_damage", pellet_damage)
 
 func get_player_node(player_id: int) -> Node:
 	for node in get_tree().get_nodes_in_group("player"):
@@ -115,7 +123,7 @@ func _on_reload_timer_timeout() -> void:
 			return
 		current_ammo += 1
 		max_ammo -= 1
-		#HERE RPC -> SFX FOR RELOAD
+		rpc("_reload_sfx")
 	if holder_id != 0:
 		var player = get_player_node(holder_id)
 		if player:

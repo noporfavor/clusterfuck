@@ -11,8 +11,8 @@
 [ext_resource type="PackedScene" uid="uid://dht314g1pymog" path="res://pickables/heal_pot.tscn" id="9_w40gc"]
 [ext_resource type="PackedScene" uid="uid://drtvbuc25567k" path="res://pickables/health_pack.tscn" id="10_06ue0"]
 [ext_resource type="PackedScene" uid="uid://bypvohmhebset" path="res://pickables/ammo_pack.tscn" id="11_aak8f"]
-[ext_resource type="PackedScene" uid="uid://dq6ti10p6fkm" path="res://guns/shotgun.tscn" id="13_dgybt"]
 [ext_resource type="PackedScene" uid="uid://cv5geq2dogtxf" path="res://pickables/gun_pickup.tscn" id="14_0xqsh"]
+[ext_resource type="PackedScene" uid="uid://b1rfy0pslex2x" path="res://pickables/shotgun_pickup.tscn" id="14_n5vvx"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0xqsh"]
 albedo_texture = ExtResource("3_008ax")
@@ -213,10 +213,10 @@ shape = SubResource("ConvexPolygonShape3D_4rcql")
 shape = SubResource("ConvexPolygonShape3D_yqrwd")
 
 [node name="HostPlayerSpawn" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.854954, 6.374264, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.954954, 3.5742638, 7.6)
 
 [node name="ClientPlayerSpawn" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.97291, 6.374264, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.12709, 3.7742639, 9)
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
 spawn_path = NodePath("..")
@@ -293,11 +293,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.199999, 0.5, 18.600002)
 [node name="heal-pot23" parent="." instance=ExtResource("9_w40gc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0.5, 18.600002)
 
-[node name="shotgun" parent="." instance=ExtResource("13_dgybt")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.300001, 1.3, -13)
-
-[node name="shotgun2" parent="." instance=ExtResource("13_dgybt")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.4, 0.8, -17.9)
-
 [node name="GunPickup" parent="." instance=ExtResource("14_0xqsh")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 1.5, 15)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29.2, 1.1000001, 14.1)
+light_energy = 3.0
+
+[node name="shotgun_pickup" parent="." instance=ExtResource("14_n5vvx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29.200003, 1.6, 12.8)

@@ -345,7 +345,7 @@ func respawn_request():
 func apply_knockback(force: Vector3):
 	velocity += force
 
-func equip_gun(gun: Node, player_id: int = multiplayer.get_unique_id()):
+func equip_gun(gun: Node, player_id: int):
 	if gun.holder_id != 0:
 		return
 
